@@ -17,11 +17,7 @@
 </head>
 <body>
 
-    <div id="ganttChart"></div>
-    <br/><br/>
-    <div id="ganttChart2"></div>
-
-    <div id="eventMessage"></div>
+    <div id="chart"></div>
 
     <script type="text/javascript" src="../lib/jquery-1.5.1.min.js"></script>
     <script type="text/javascript" src="../lib/date.js"></script>
@@ -30,19 +26,15 @@
     <script type="text/javascript" src="data.js"></script>
     <script type="text/javascript">
         $(function () {
-            $gantt = $("#ganttChart").gantt({
-                data: ganttData,
-                width: 900,
-                showWeekends: true,
-                boundaryLeft: new Date(2010, 00, 07),
-                boundaryRight: new Date(2010, 01, 00),
-            });
-            $gantt.gantt("getData");
-            //$gantt.gantt("setData", [ { id: 1, name: "Feature 1", series: [{ start: new Date(2010,00,06), end: new Date(2010,00,10) } ]} ]);
-            
-
-            
-            $("#ganttChart2").gantt();
+            var chart = $("#chart").planner({
+                                            data: plannerData,
+                                            width: 900,
+                                            showWeekends: true,
+                                            boundaryLeft: new Date(2010, 00, 07),
+                                            boundaryRight: new Date(2010, 01, 00),
+                                        });
+            chart.planner("getData");
+            //chart.planner("setData", [ { id: 1, name: "Feature 1", series: [{ start: new Date(2010,00,06), end: new Date(2010,00,10) } ]} ]);
         });
 
     </script>

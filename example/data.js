@@ -1,4 +1,4 @@
-var ganttData = [
+var plannerData = [
 	{
 		id: 1, name: "Feature 1", series: [
 			{ start: new Date(2010,00,01), end: new Date(2010,00,03) },

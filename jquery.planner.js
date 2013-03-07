@@ -17,7 +17,7 @@ boundaryEnd : date
 */
 
 (function (jQuery) {
-    jQuery.widget("custom.gantt", {
+    jQuery.widget("custom.planner", {
         chart: undefined,
 
         _create: function() {
