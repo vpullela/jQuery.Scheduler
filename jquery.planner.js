@@ -19,17 +19,24 @@ boundaryEnd : date
 (function (jQuery) {
     jQuery.widget("custom.gantt", {
         chart: undefined,
-        
+
         _create: function() {
             this.chart = new Chart(this.options, this.element);
         },
-        
+
         setData: function(data) {
             this.chart.setData(data);
         },
-        
+
         getData: function() {
             return this.chart.getData();
+        },
+
+        _setOption: function (name, value) {
+            if(name === 'width') {
+                this.chart.setWidth(value);
+            }
+            $.Widget.prototype._setOption.apply(this, arguments);
         }
     });
 
@@ -58,11 +65,11 @@ boundaryEnd : date
         options.showWeekends  = options.showWeekends  && true;         // false
 
         // calculabe options
-        options.containerWidth = options.width - options.vtHeaderWidth - 2;
+        options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
         this.options = options;
         this.dataManager = new DataManager(options);
-        
+
         this._init();
     }
     Chart.prototype = Object.create(JQueryWrapper.prototype);
@@ -70,8 +77,6 @@ boundaryEnd : date
     jQuery.extend(Chart.prototype, {
         _init: function() {
             this.element.addClass("planner");
-            this.element.css("width", this.options.width);
-
             this.setJquery(this.element);
 
             this.setData(this.options.data);
@@ -81,6 +86,7 @@ boundaryEnd : date
 
         render: function() {
             this.removeContent();
+            this.element.css("width", this.options.width);
 
             this.vtHeader = new VtHeader(this.options, this.dataManager);
             this.slideContainer = new SlideContainer(this.options, this.dataManager);
@@ -90,13 +96,13 @@ boundaryEnd : date
 
             this.applyLastClass();
         },
-        
+
         removeContent: function() {
             if (this.vtHeader) {
                 this.vtHeader.removeContent();
                 this.vtHeader.destroyJquery();
             }
-    
+
             if (this.slideContainer) {
                 this.slideContainer.removeContent();
                 this.slideContainer.destroyJquery();
@@ -129,19 +135,25 @@ boundaryEnd : date
 
             this.slideContainer.render();
         },
-        
+
         onClickOnZoomIn: function() {
             this.options.cellWidth++;
 
             this.slideContainer.render();
         },
-        
+
         getData: function() {
             return this.dataManager.getData();
         },
-        
+
         setData: function(data) {
             this.dataManager.setData(data);
+            this.render();
+        },
+
+        setWidth: function(width) {
+            this.options.width = width;
+
             this.render();
         }
     });
@@ -189,7 +201,7 @@ boundaryEnd : date
                 this.getJquery().append(itemDiv);
             }
         },
-        
+
         removeContent: function() {
             /* empty */
         }
@@ -245,7 +257,7 @@ boundaryEnd : date
             var slideContainer = jQuery("<div>", {
                 "class": "planner-slide-container",
                 "css": {
-                    "width": this.options.containerWidth + "px"
+                    "width": this.options.containerWidth() + "px"
                 }
             });
 
@@ -777,7 +789,7 @@ boundaryEnd : date
             this.boundaryLeft = this.boundaryLeft || this.minDate || new Date();
             this.boundaryRight = this.boundaryRight || this.maxDate || new Date();
         },
-        
+
         getData: function() {
             return this.data;
         },
@@ -830,7 +842,7 @@ boundaryEnd : date
             return this.boundaryRight;
         },
         getBoundaryRightAdjusted: function() {
-            var minDays = Math.floor(this.options.containerWidth/this.options.cellWidth);
+            var minDays = Math.floor(this.options.containerWidth()/this.options.cellWidth);
             var minBoundaryRight = this.boundaryLeft.clone().addDays(minDays);
 
             if (minBoundaryRight.compareTo(this.boundaryRight) > 0) {
