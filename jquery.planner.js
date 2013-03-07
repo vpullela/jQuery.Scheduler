@@ -25,7 +25,6 @@ boundaryEnd : date
         },
         
         setData: function(data) {
-            console.log("1");
             this.chart.setData(data);
         },
         
@@ -142,7 +141,6 @@ boundaryEnd : date
         },
         
         setData: function(data) {
-            console.log(data);
             this.dataManager.setData(data);
             this.render();
         }
