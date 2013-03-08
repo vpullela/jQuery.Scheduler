@@ -12,8 +12,7 @@ data: object
 cellWidth: number
 cellHeight: number
 width: number
-boundaryLeft : date/string
-boundaryRight : date/string
+boundary: {left : object/string right: object/string}
 */
 
 (function (jQuery) {
@@ -33,9 +32,13 @@ boundaryRight : date/string
         },
 
         _setOption: function (name, value) {
-            if(name === 'width') {
+            if (name === "width") {
                 this.chart.setWidth(value);
             }
+            if (name === "boundary") {
+                this.chart.setBoundaries(value);
+            }
+
             $.Widget.prototype._setOption.apply(this, arguments);
         }
     });
@@ -65,8 +68,6 @@ boundaryRight : date/string
         options.showWeekends  = options.showWeekends  && true;         // false
         options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd"
         // calculabe options
-        options.boundaryLeft   = DateUtils.convertToDate(options.boundaryLeft, options.dateFormat);
-        options.boundaryRight  = DateUtils.convertToDate(options.boundaryRight, options.dateFormat);
         options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
         this.options = options;
@@ -157,6 +158,15 @@ boundaryRight : date/string
             this.options.width = width;
 
             this.render();
+        },
+
+        setBoundaries: function(boundary) {
+            /* TODO : duplication */
+            this.options.boundary = boundary;
+
+            // recalculate data table with new boundary
+            this.dataManager.setData(this.dataManager.getData());
+            this.render()
         }
     });
 
@@ -410,14 +420,13 @@ boundaryRight : date/string
         // between the given start and end dates
         getDatePeriod: function() {
             var dates = [];
-            var start = this.dataManager.getBoundaryLeft();
-            var end = this.dataManager.getBoundaryRightAdjusted();
+            var boundaryAdj = this.dataManager.getBoundaryAdjusted();
 
-            dates[start.getFullYear()] = [];
-            dates[start.getFullYear()][start.getMonth()] = [start]
-            var last = start;
+            dates[boundaryAdj.left.getFullYear()] = [];
+            dates[boundaryAdj.left.getFullYear()][boundaryAdj.left.getMonth()] = [boundaryAdj.left]
 
-            while (last.compareTo(end) == -1) {
+            var last = boundaryAdj.left;
+            while (last.compareTo(boundaryAdj.right) == -1) {
                 var next = last.clone().addDays(1);
                 if (!dates[next.getFullYear()]) { dates[next.getFullYear()] = []; }
                 if (!dates[next.getFullYear()][next.getMonth()]) {
@@ -680,7 +689,7 @@ boundaryRight : date/string
         render: function() {
             this.removeContent();
 
-            var marginShift = this.dataManager.getBoundaryLeft();
+            var marginShift = this.dataManager.getBoundary().left;
             var data = this.dataManager.getRowData(this.order);
 
             for (var blockNumber = 0; blockNumber < data.length; blockNumber++) {
@@ -765,17 +774,23 @@ boundaryRight : date/string
     jQuery.extend(DataManager.prototype, {
         _init: function() {
             this.data = [];
-            
-            this.boundaryLeft = this.options.boundaryLeft;
-            this.boundaryRight = this.options.boundaryRight;
+
+            this.boundary = {};
+            if (this.options.boundary) {
+                this.boundary = {
+                    left : DateUtils.convertToDate(this.options.boundary.left, this.options.dateFormat),
+                    right : DateUtils.convertToDate(this.options.boundary.right, this.options.dateFormat),
+                }
+            }
 
             this.minDate = undefined;
             this.maxDate = undefined;
         },
 
-        // table
+        //table
         setData: function(data) {
             this._init();
+
             var data = data || []
             for (var i=0; i < data.length; i++) {
                 var series  = data[i].series || [];
@@ -787,8 +802,8 @@ boundaryRight : date/string
                 });
             }
 
-            this.boundaryLeft = this.boundaryLeft || this.minDate || new Date();
-            this.boundaryRight = this.boundaryRight || this.maxDate || new Date();
+            this.boundary.left = this.boundary.left || this.minDate || new Date();
+            this.boundary.right = this.boundary.right || this.maxDate || new Date();
         },
 
         getData: function() {
@@ -836,21 +851,19 @@ boundaryRight : date/string
         },
 
         // hzMenu
-        getBoundaryLeft: function() {
-            return this.boundaryLeft;
+        getBoundary: function() {
+            return this.boundary;
         },
-        getBoundaryRight: function() {
-            return this.boundaryRight;
-        },
-        getBoundaryRightAdjusted: function() {
+        getBoundaryAdjusted: function() {
             var minDays = Math.floor(this.options.containerWidth()/this.options.cellWidth);
-            var minBoundaryRight = this.boundaryLeft.clone().addDays(minDays);
+            var minBoundaryRight = this.boundary.left.clone().addDays(minDays);
 
-            if (minBoundaryRight.compareTo(this.boundaryRight) > 0) {
-                return minBoundaryRight;
+            var boundaryAdj = this.boundary;
+            if (minBoundaryRight.compareTo(boundaryAdj.right) > 0) {
+                boundaryAdj.right = minBoundaryRight;
             }
 
-            return this.boundaryRight;
+            return boundaryAdj;
         },
 
         // helper functions
@@ -862,32 +875,32 @@ boundaryRight : date/string
                 if (!rowData[i].start || !rowData[i].end) {
                     continue;
                 }
-                
+
                 /* convert if dates in string */
                 rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
                 rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
-                
+
                 /* remove intervals with switched date */
                 if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
                     continue;
                 }
 
-                /* fit to boundaries */
-                if (this.options.boundaryLeft && this.options.boundaryRight) {
+                /* fit to boundary */
+                if (this.boundary.left && this.boundary.right) {
 
-                    if (rowData[i].start.compareTo(this.boundaryLeft) < 0
-                        && rowData[i].end.compareTo(this.boundaryLeft) < 0) {
+                    if (rowData[i].start.compareTo(this.boundary.left) < 0
+                        && rowData[i].end.compareTo(this.boundary.Left) < 0) {
                         continue;
                     }
-                    if (rowData[i].start.compareTo(this.boundaryRight) > 0
-                        && rowData[i].end.compareTo(this.boundaryRight) > 0) {
+                    if (rowData[i].start.compareTo(this.boundary.right) > 0
+                        && rowData[i].end.compareTo(this.boundary.right) > 0) {
                         continue;
                     }
-                    if (rowData[i].start.compareTo(this.boundaryLeft) < 0) {
-                        rowData[i].start = this.boundaryLeft;
+                    if (rowData[i].start.compareTo(this.boundary.left) < 0) {
+                        rowData[i].start = this.boundary.left;
                     }
-                    if (rowData[i].end.compareTo(this.boundaryRight) > 0) {
-                        rowData[i].end = this.boundaryRight;
+                    if (rowData[i].end.compareTo(this.boundary.right) > 0) {
+                        rowData[i].end = this.boundary.right;
                     }
                 }
 
@@ -944,16 +957,12 @@ boundaryRight : date/string
             return mergedArr;
         },
         getNumberOfDays: function() {
-            var start = this.getBoundaryLeft();
-            var end = this.getBoundaryRight();
-
-            return numberOfDays = DateUtils.daysBetween(start, end);
+            var boundary = this.getBoundary();
+            return numberOfDays = DateUtils.daysBetween(boundary.left, boundary.right);
         },
         getNumberOfDaysAdjusted: function() {
-            var start = this.getBoundaryLeft();
-            var end = this.getBoundaryRightAdjusted();
-
-            return numberOfDays = DateUtils.daysBetween(start, end);
+            var boundaryAdj = this.getBoundaryAdjusted();
+            return numberOfDays = DateUtils.daysBetween(boundaryAdj.left, boundaryAdj.right);
         }
     });
 
