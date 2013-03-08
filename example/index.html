@@ -27,16 +27,13 @@
     <script type="text/javascript">
         $(function () {
             var chart = $("#chart").planner({
-                                            data: plannerData,
                                             width: 900,
                                             showWeekends: true,
-                                            boundary:{ left: "2010-01-01", right: "2010-01-20"}
                                         });
                                         
             chart.planner("getData");
-            chart.planner("option", {width : 400});
             chart.planner("setData", [ { id: 1, name: "Feature 1", series: [{ start: "2010-01-06", end: "2010-01-10" } ]} ]);
-            chart.planner("option", {boundary: {left: "2010-01-05", right: "2010-01-30"}});
+            chart.planner("option", {boundary: {left: "2010-01-01", right: "2010-01-20"}});
         });
 
     </script>

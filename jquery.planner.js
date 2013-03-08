@@ -287,8 +287,8 @@ boundary: {left : object/string right: object/string}
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
             var numberOfRows = this.dataManager.getNumberOfRows();
-            var unavailableDays = numberOfDaysAdj - numberOfDays;
 
+            var unavailableDays = numberOfDaysAdj - numberOfDays;
             this.ganttViewBody = jQuery("<div>", {
                 "class" : "planner-body",
                 "css" : {
@@ -858,7 +858,9 @@ boundary: {left : object/string right: object/string}
             var minDays = Math.floor(this.options.containerWidth()/this.options.cellWidth);
             var minBoundaryRight = this.boundary.left.clone().addDays(minDays);
 
-            var boundaryAdj = this.boundary;
+            var boundaryAdj = {};
+            boundaryAdj.left = this.boundary.left;
+            boundaryAdj.right = this.boundary.right;
             if (minBoundaryRight.compareTo(boundaryAdj.right) > 0) {
                 boundaryAdj.right = minBoundaryRight;
             }
