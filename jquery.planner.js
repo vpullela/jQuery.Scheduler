@@ -12,8 +12,8 @@ data: object
 cellWidth: number
 cellHeight: number
 width: number
-boundaryStart : date
-boundaryEnd : date
+boundaryLeft : date/string
+boundaryRight : date/string
 */
 
 (function (jQuery) {
@@ -65,6 +65,8 @@ boundaryEnd : date
         options.showWeekends  = options.showWeekends  && true;         // false
         options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd"
         // calculabe options
+        options.boundaryLeft   = DateUtils.convertToDate(options.boundaryLeft, options.dateFormat);
+        options.boundaryRight  = DateUtils.convertToDate(options.boundaryRight, options.dateFormat);
         options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
         this.options = options;
@@ -763,6 +765,7 @@ boundaryEnd : date
     jQuery.extend(DataManager.prototype, {
         _init: function() {
             this.data = [];
+            
             this.boundaryLeft = this.options.boundaryLeft;
             this.boundaryRight = this.options.boundaryRight;
 
@@ -861,12 +864,8 @@ boundaryEnd : date
                 }
                 
                 /* convert if dates in string */
-                if (typeof rowData[i].start == "string") {
-                    rowData[i].start = Date.parseExact(rowData[i].start, this.options.dateFormat);
-                }
-                if (typeof rowData[i].end == "string") {
-                    rowData[i].end = Date.parseExact(rowData[i].end, this.options.dateFormat);
-                }
+                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
+                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
                 
                 /* remove intervals with switched date */
                 if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
@@ -1039,6 +1038,12 @@ boundaryEnd : date
             while (date.compareTo(end) == -1) { count = count + 1; date.addDays(1); }
             return count;
         },
+        convertToDate: function(date, format) {
+            if (typeof date == "string") {
+                date = Date.parseExact(date, format);
+            }
+            return date;
+        }
     };
 
 })(jQuery);
