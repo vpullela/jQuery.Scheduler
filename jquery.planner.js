@@ -63,7 +63,7 @@ boundaryEnd : date
         options.width         = options.width         || width         || 600;
         options.vtHeaderWidth = options.vtHeaderWidth || vtHeaderWidth || 100;
         options.showWeekends  = options.showWeekends  && true;         // false
-
+        options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd"
         // calculabe options
         options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
@@ -243,8 +243,6 @@ boundaryEnd : date
     function SlideContainer(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
-
-
 
         this.contentArray = [];
 
@@ -854,9 +852,22 @@ boundaryEnd : date
 
         // helper functions
         prepareRowData: function(rowData, checkBoundary) {
-            var correctArr = []
+            var correctArr = [];
+            /* TODO: ? move to separete function */
             for(var i=0; i< rowData.length; i++) {
-
+                /* skip if period is not set */
+                if (!rowData[i].start || !rowData[i].end) {
+                    continue;
+                }
+                
+                /* convert if dates in string */
+                if (typeof rowData[i].start == "string") {
+                    rowData[i].start = Date.parseExact(rowData[i].start, this.options.dateFormat);
+                }
+                if (typeof rowData[i].end == "string") {
+                    rowData[i].end = Date.parseExact(rowData[i].end, this.options.dateFormat);
+                }
+                
                 /* remove intervals with switched date */
                 if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
                     continue;
