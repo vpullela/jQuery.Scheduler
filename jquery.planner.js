@@ -385,12 +385,15 @@ boundary: {left : object/string right: object/string}
         getGrid: function() {
             var grid = [];
 
+            var firstDayOffset = 0;
             for (var i=0; i < this.daysArray.length; i++) {
                 var day = this.daysArray[i];
-
+                if (i == 0) {
+                    firstDayOffset = day.getJquery().offset().left;
+                }
                 grid.push({
                     "date": day.date,
-                    "offset": day.getJquery().offset().left
+                    "offset": firstDayOffset + this.cellWidth * i
                 });
             }
 
