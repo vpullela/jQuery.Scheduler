@@ -671,11 +671,13 @@ boundary: {left : object/string right: object/string}
        _init: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
+            var numberOfDays = this.dataManager.getNumberOfDaysAdjusted();
 
             var container = jQuery("<div>", {
                 "class": "planner-block-container",
                 "css" : {
-                    "height": cellHeight + "px"
+                    "height": cellHeight + "px",
+                    "width": (numberOfDays+1) * cellWidth + "px"
                 }
             });
             // TODO:: data method
