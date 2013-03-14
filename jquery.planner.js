@@ -891,7 +891,7 @@ boundary: {left : object/string right: object/string}
                 if (this.boundary.left && this.boundary.right) {
 
                     if (rowData[i].start.compareTo(this.boundary.left) < 0
-                        && rowData[i].end.compareTo(this.boundary.Left) < 0) {
+                        && rowData[i].end.compareTo(this.boundary.left) < 0) {
                         continue;
                     }
                     if (rowData[i].start.compareTo(this.boundary.right) > 0
