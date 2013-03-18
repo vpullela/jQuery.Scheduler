@@ -15,8 +15,8 @@ width: number
 boundary: {left : object/string right: object/string}
 */
 
-(function (jQuery) {
-    jQuery.widget("custom.planner", {
+(function ($) {
+    $.widget("custom.planner", {
         chart: undefined,
 
         _create: function() {
@@ -77,7 +77,7 @@ boundary: {left : object/string right: object/string}
     }
     Chart.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(Chart.prototype, {
+    $.extend(Chart.prototype, {
         _init: function() {
             this.element.addClass("planner");
             this.setJquery(this.element);
@@ -113,19 +113,19 @@ boundary: {left : object/string right: object/string}
         },
 
         applyLastClass: function() {
-            jQuery("div.planner-vtheader div.planner-vtheader-item:last-child", this.getJquery()).addClass("last");
-            jQuery("div.planner-hzheader-days div.planner-hzheader-day:last-child", this.getJquery()).addClass("last");
-            jQuery("div.planner-hzheader-months div.planner-hzheader-month:last-child", this.getJquery()).addClass("last");
+            $("div.planner-vtheader div.planner-vtheader-item:last-child", this.getJquery()).addClass("last");
+            $("div.planner-hzheader-days div.planner-hzheader-day:last-child", this.getJquery()).addClass("last");
+            $("div.planner-hzheader-months div.planner-hzheader-month:last-child", this.getJquery()).addClass("last");
         },
 
         setEvents: function() {
             /** TDOD: replase selectors */
             this.getJquery().delegate("div.planner-menu-item.zoomout",
                 "click",
-                jQuery.proxy(this.onClickOnZoomOut, this));
+                $.proxy(this.onClickOnZoomOut, this));
             this.getJquery().delegate("div.planner-menu-item.zoomin",
                 "click",
-                jQuery.proxy(this.onClickOnZoomIn, this));
+                $.proxy(this.onClickOnZoomIn, this));
         },
 
         onClickOnZoomOut: function() {
@@ -181,9 +181,9 @@ boundary: {left : object/string right: object/string}
     }
     VtHeader.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(VtHeader.prototype, {
+    $.extend(VtHeader.prototype, {
         _init: function (options) {
-            var headerDiv = jQuery("<div>", {
+            var headerDiv = $("<div>", {
                 "class": "planner-vtheader",
                 "css": {
                     "width" : this.options.vtHeaderWidth
@@ -203,7 +203,7 @@ boundary: {left : object/string right: object/string}
             this.appendJquery(menu);
 
             for (var i = 0; i < data.length; i++) {
-                var itemDiv = jQuery("<div>", {
+                var itemDiv = $("<div>", {
                     "class": "planner-vtheader-item planner-nonselectable",
                     "css" : {
                         "height" : cellHeight + "px"
@@ -230,9 +230,9 @@ boundary: {left : object/string right: object/string}
     }
     Menu.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(Menu.prototype, {
+    $.extend(Menu.prototype, {
         _init: function () {
-            var menuDiv = jQuery("<div>", {
+            var menuDiv = $("<div>", {
                 "class": "planner-menu planner-nonselectable",
             });
 
@@ -242,8 +242,8 @@ boundary: {left : object/string right: object/string}
         },
 
         render: function() {
-            var zoomIn = jQuery("<div>", { "class": "planner-menu-item zoomin planner-nonselectable" });
-            var zoomOut = jQuery("<div>", { "class": "planner-menu-item zoomout planner-nonselectable" });
+            var zoomIn = $("<div>", { "class": "planner-menu-item zoomin planner-nonselectable" });
+            var zoomOut = $("<div>", { "class": "planner-menu-item zoomout planner-nonselectable" });
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
         }
@@ -262,9 +262,9 @@ boundary: {left : object/string right: object/string}
     }
     SlideContainer.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(SlideContainer.prototype, {
+    $.extend(SlideContainer.prototype, {
         _init: function() {
-            var slideContainer = jQuery("<div>", {
+            var slideContainer = $("<div>", {
                 "class": "planner-slide-container",
                 "css": {
                     "width": this.options.containerWidth() + "px"
@@ -289,13 +289,13 @@ boundary: {left : object/string right: object/string}
             var numberOfRows = this.dataManager.getNumberOfRows();
 
             var unavailableDays = numberOfDaysAdj - numberOfDays;
-            this.ganttViewBody = jQuery("<div>", {
+            this.ganttViewBody = $("<div>", {
                 "class" : "planner-body",
                 "css" : {
                     "width" : (numberOfDaysAdj+1) * cellWidth  + "px",
                     }
                 });
-            this.unavailableDiv = jQuery("<div>", {
+            this.unavailableDiv = $("<div>", {
                 "class": "planner-blocks-unavailable",
                 "css": {
                     "border" : 0,
@@ -318,7 +318,7 @@ boundary: {left : object/string right: object/string}
         },
 
         removeContent: function() {
-            jQuery(this.contentArray).each(function() {
+            $(this.contentArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
             });
@@ -345,21 +345,21 @@ boundary: {left : object/string right: object/string}
     }
     HzHeader.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(HzHeader.prototype, {
+    $.extend(HzHeader.prototype, {
         _monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 
         _init: function() {
             var dates = this.getDatePeriod();
             var numberOfDays = this.dataManager.getNumberOfDaysAdjusted();
 
-            var headerDiv = jQuery("<div>", { "class": "planner-hzheader" });
-            var monthsDiv = jQuery("<div>", { "class": "planner-hzheader-months" });
-            var daysDiv = jQuery("<div>", { "class": "planner-hzheader-days" });
+            var headerDiv = $("<div>", { "class": "planner-hzheader" });
+            var monthsDiv = $("<div>", { "class": "planner-hzheader-months" });
+            var daysDiv = $("<div>", { "class": "planner-hzheader-days" });
 
             for (var y in dates) {
                 for (var m in dates[y]) {
                     var w = dates[y][m].length * this.cellWidth;
-                    monthsDiv.append(jQuery("<div>", {
+                    monthsDiv.append($("<div>", {
                         "class": "planner-hzheader-month planner-nonselectable",
                         "css": { "width": w + "px" }
                     }).append(this._monthNames[m] + "/" + y));
@@ -452,13 +452,13 @@ boundary: {left : object/string right: object/string}
     }
     HzHeaderDay.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(HzHeaderDay.prototype, {
+    $.extend(HzHeaderDay.prototype, {
         _init: function(date) {
             this.date = date;
             this.cellWidth = this.options.cellWidth;
             this.showWeekends = this.options.showWeekends;
 
-            var day = jQuery("<div>", { "class": "planner-hzheader-day planner-nonselectable" });
+            var day = $("<div>", { "class": "planner-hzheader-day planner-nonselectable" });
             day.css("width", this.cellWidth);
             if (this.showWeekends && this.isWeekend()) {
                 day.addClass("planner-weekend");
@@ -487,13 +487,13 @@ boundary: {left : object/string right: object/string}
     }
     ContainerList.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(ContainerList.prototype, {
+    $.extend(ContainerList.prototype, {
         _init: function() {
             var numberOfDays = this.dataManager.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
-            var blocksDiv = jQuery("<div>", {
+            var blocksDiv = $("<div>", {
                 "class": "planner-blocks",
                 "css": {
                     "border" : 0,
@@ -519,7 +519,7 @@ boundary: {left : object/string right: object/string}
         },
 
         removeContent: function() {
-            jQuery(this.containerArray).each(function() {
+            $(this.containerArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
             });
@@ -533,20 +533,20 @@ boundary: {left : object/string right: object/string}
             /* TODO: ?undelegate events on removeContent */
             this.getJquery().delegate("div.planner-block",
                 "mouseover",
-                jQuery.proxy(this.onMouseover, this));
+                $.proxy(this.onMouseover, this));
 
             this.getJquery().delegate("div.planner-block",
                 "click",
-                jQuery.proxy(this.onClickOnBlock, this));
+                $.proxy(this.onClickOnBlock, this));
 
             this.getJquery().delegate("div.planner-block-container",
                 "click",
-                jQuery.proxy(this.onClickOnContainer, this));
+                $.proxy(this.onClickOnContainer, this));
         },
 
         onMouseover: function(e) {
             // set resizable/draggable interactions to block
-            element = jQuery(e.currentTarget);
+            element = $(e.currentTarget);
             if (!element.data("init")) {
                 element.data("init", true);
 
@@ -568,7 +568,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onResizeBlockStart: function(e, ui) {
-            ui.element.after(jQuery("<div>", {
+            ui.element.after($("<div>", {
                 "css": {
                     "display": "inline-block",
                     "position": "relative",
@@ -606,7 +606,7 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
-            var ui = jQuery(e.currentTarget);
+            var ui = $(e.currentTarget);
             var grid = this.hzHeader.getGrid();
             var date = grid.getDateByPos(e.pageX);
 
@@ -619,7 +619,7 @@ boundary: {left : object/string right: object/string}
             this.containerArray[rowNum].render();
         },
         onClickOnContainer: function(e) {
-            var element = jQuery(e.currentTarget)
+            var element = $(e.currentTarget)
             var grid = this.hzHeader.getGrid();
             var startDate = grid.getDateByPos(e.pageX);
             var newBlockData = {
@@ -670,13 +670,13 @@ boundary: {left : object/string right: object/string}
     }
     Container.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(Container.prototype, {
+    $.extend(Container.prototype, {
        _init: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
             var numberOfDays = this.dataManager.getNumberOfDaysAdjusted();
 
-            var container = jQuery("<div>", {
+            var container = $("<div>", {
                 "class": "planner-block-container",
                 "css" : {
                     "height": cellHeight + "px",
@@ -712,7 +712,7 @@ boundary: {left : object/string right: object/string}
         },
 
         removeContent: function() {
-            jQuery(this.blockArray).each(function() {
+            $(this.blockArray).each(function() {
                 this.destroyJquery()
             });
             this.blockArray = [];
@@ -731,7 +731,7 @@ boundary: {left : object/string right: object/string}
     }
     Block.prototype = Object.create(JQueryWrapper.prototype);
 
-    jQuery.extend(Block.prototype, {
+    $.extend(Block.prototype, {
         _init: function(marginShift, blockData) {
             this.cellWidth = this.options.cellWidth;
             this.blockData = blockData;
@@ -740,7 +740,7 @@ boundary: {left : object/string right: object/string}
             var size = DateUtils.daysBetween(this.blockData.start, this.blockData.end) + 1;
             var offset = DateUtils.daysBetween(marginShift, this.blockData.start);
 
-            var block = jQuery("<div>", {
+            var block = $("<div>", {
                 "class": "planner-block",
                 "title": "publication",
                 "css": {
@@ -758,7 +758,7 @@ boundary: {left : object/string right: object/string}
             block.data("blockNum", this.blockNum);
 
             // duration
-            var textBlock = jQuery("<div>", { "class": "planner-block-text" }).text(size);
+            var textBlock = $("<div>", { "class": "planner-block-text" }).text(size);
             textBlock.addClass("planner-nonselectable");
             block.append(textBlock);
 
@@ -776,7 +776,7 @@ boundary: {left : object/string right: object/string}
         this._init();
     }
 
-    jQuery.extend(DataManager.prototype, {
+    $.extend(DataManager.prototype, {
         _init: function() {
             this.data = [];
 
@@ -839,7 +839,7 @@ boundary: {left : object/string right: object/string}
         // block
         updateBlock: function (rowNumber, blockNumber, blockData) {
             var rowData = this.data[rowNumber].series;
-            jQuery.extend(rowData[blockNumber], blockData);
+            $.extend(rowData[blockNumber], blockData);
             this.data[rowNumber].series = this.prepareRowData(rowData);
         },
 
@@ -980,15 +980,15 @@ boundary: {left : object/string right: object/string}
     * jQuery Wrapper
     */
     function JQueryWrapper () {
-        this.jQueryElement = jQuery("<div>");
+        this.jQueryElement = $("<div>");
     }
 
-    jQuery.extend(JQueryWrapper.prototype, {
+    $.extend(JQueryWrapper.prototype, {
         /* Wrapper */
 
         getCssProperty: function(fromClass, propertyName) {
-            var $inspector = jQuery("<div>").css("display", "none").addClass(fromClass);
-            jQuery("body").append($inspector);
+            var $inspector = $("<div>").css("display", "none").addClass(fromClass);
+            $("body").append($inspector);
             try {
                 return $inspector.css(propertyName);
             } finally {
