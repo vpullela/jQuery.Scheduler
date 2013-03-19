@@ -20,7 +20,7 @@ boundary: {left : object/string right: object/string}
         chart: undefined,
 
         _create: function() {
-            this.chart = new Chart(this.options, this.element);
+            this.chart = new Chart(this.options, this.element, this);
         },
 
         setData: function(data) {
@@ -49,8 +49,10 @@ boundary: {left : object/string right: object/string}
     /**
      * Chart class
      */
-    function Chart(options, element) {
-        this.element = element
+    function Chart(options, element, widget) {
+        this.element = element;
+        /* TODO: handle widget parameter passing */
+        this.widget = widget;
 
         /** Geometry Handling */
         // get the geometry properties from css
@@ -128,7 +130,7 @@ boundary: {left : object/string right: object/string}
                 $.proxy(this.onClickOnZoomIn, this));
         },
 
-        onClickOnZoomOut: function() {
+        onClickOnZoomOut: function(event) {
             if (this.options.cellWidth < 3) {
                 this.options.cellWidth = 3;
                 return;
@@ -137,6 +139,8 @@ boundary: {left : object/string right: object/string}
             this.options.cellWidth--;
 
             this.slideContainer.render();
+
+            this.widget._trigger("onclickonzoomout", event, {test: 1});
         },
 
         onClickOnZoomIn: function() {
