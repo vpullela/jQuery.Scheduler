@@ -150,7 +150,7 @@ boundary: {left : object/string right: object/string}
         },
 
         getData: function() {
-            return this.dataManager.getData();
+            return this.dataManager.getDataJson();
         },
 
         setData: function(data) {
@@ -818,6 +818,29 @@ boundary: {left : object/string right: object/string}
 
         getData: function() {
             return this.data;
+        },
+
+        getDataJson: function() {
+            var convertedData = [];
+            for (var i in this.data) {
+                var row  = this.data[i];
+                var convertedRow = {
+                    metadata: row.metadata,
+                    series: []
+                };
+                for (var j in row.series) {
+                    var serie = row.series[j];
+                    var convertedSerie = $.extend({}, serie); // clone object
+                    
+                    convertedSerie.start = serie.start.toString(this.options.dateFormat),
+                    convertedSerie.end = serie.end.toString(this.options.dateFormat),
+
+                    convertedRow.series.push(convertedSerie);
+                } 
+                convertedData.push(convertedRow);
+            }
+            
+           return convertedData;
         },
 
         // row
