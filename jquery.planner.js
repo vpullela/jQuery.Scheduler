@@ -350,6 +350,7 @@ boundary: {left : object/string right: object/string}
     HzHeader.prototype = Object.create(JQueryWrapper.prototype);
 
     $.extend(HzHeader.prototype, {
+        /* TODO: move to configuration part */
         _monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 
         _init: function() {
@@ -806,7 +807,7 @@ boundary: {left : object/string right: object/string}
                 series = this.prepareRowData(series, false);
 
                 this.data.push({
-                    "name" : (data[i].name || ""),
+                    "metadata" : (data[i].metadata || []),
                     "series" : series
                 });
             }
@@ -854,7 +855,7 @@ boundary: {left : object/string right: object/string}
         getRowNames: function() {
             var rowNameList = [];
             for (var i=0; i < this.data.length; i++) {
-                rowNameList.push(this.data[i].name);
+                rowNameList.push(this.data[i].metadata.name);
             }
             return rowNameList;
         },
