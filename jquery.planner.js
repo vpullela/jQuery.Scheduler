@@ -487,6 +487,8 @@ boundary: {left : object/string right: object/string}
         this.hzHeader = hzHeader;
         this.cellWidth = this.options.cellWidth;
         this.containerArray = [];
+        this.selectedBlocks = {};
+        this.isBlocksDragged = false;
 
         this._init();
     }
@@ -567,6 +569,7 @@ boundary: {left : object/string right: object/string}
                     axis: "x",
                     grid: [this.cellWidth, this.cellWidth],
                     start: $.proxy(this.onDragBlockStart,this),
+                    drag: $.proxy(this.onDragBlock, this),
                     stop: $.proxy(this.onDragBlockStop, this)
                 });
             }
@@ -583,10 +586,10 @@ boundary: {left : object/string right: object/string}
                     "margin-right": ui.element.css("margin-right")
                 }
             }));
-            ui.helper.addClass("active");
+            ui.helper.addClass("selected");
         },
         onResizeBlockStop: function(e, ui) {
-            ui.helper.removeClass("active");
+            ui.helper.removeClass("selected");
             ui.element.next().remove();
 
             var rowNum = ui.element.data("rowNum");
@@ -597,27 +600,80 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            ui.helper.addClass("active");
-        },
-        onDragBlockStop: function(e, ui) {
-            ui.helper.removeClass("active");
-
+            ui.helper.addClass("selected");
             var rowNum = ui.helper.data("rowNum");
             var blockNum = ui.helper.data("blockNum");
-            this.dataManager.updateBlock(rowNum, blockNum, this.calculateDates(ui.helper));
 
-            this.containerArray[rowNum].render();
+            // TODO:: duplication
+            if (!(rowNum in this.selectedBlocks)) {
+                this.selectedBlocks[rowNum] = {};
+            }
+            if (!(blockNum in this.selectedBlocks[rowNum])) {
+                this.selectedBlocks[rowNum][blockNum] = ui.helper;
+            }
+        },
+        onDragBlock: function(e, ui) {
+            for (var rowNum in this.selectedBlocks) {
+                for (var blockNum in this.selectedBlocks[rowNum]) {
+                    var block = this.selectedBlocks[rowNum][blockNum];
+                    var blockLeft = parseInt(block.css("left"), 10) || 0;
+
+                    if (blockLeft != ui.position.left) {
+                        this.isBlocksDragged = true;
+                        
+                        block.css({
+                            left: ui.position.left
+                        });
+                    }
+                }
+            }
+        },
+        onDragBlockStop: function(e, ui) {
+
+            if (!this.isBlocksDragged) {
+                return;
+            }
+            this.isBlocksDragged = false;
+
+            for (var rowNum in this.selectedBlocks) {
+                for (var blockNum in this.selectedBlocks[rowNum]) {
+                    var block = this.selectedBlocks[rowNum][blockNum];
+
+                    this.dataManager.updateBlock(rowNum, blockNum, this.calculateDates(block));
+
+                    block.removeClass("selected");
+                    delete this.selectedBlocks[rowNum][blockNum];
+                }
+                this.containerArray[rowNum].render();
+            }
         },
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
+            
             var ui = $(e.currentTarget);
             var grid = this.hzHeader.getGrid();
             var date = grid.getDateByPos(e.pageX);
-
-
             var rowNum = ui.data("rowNum");
             var blockNum = ui.data("blockNum");
+            
+            if (e.ctrlKey) {
+                ui.toggleClass('selected');
+
+                // TODO:: duplication
+                if (!(rowNum in this.selectedBlocks)) {
+                    this.selectedBlocks[rowNum] = {};
+                }
+                if (blockNum in this.selectedBlocks[rowNum]) {
+                    delete this.selectedBlocks[rowNum][blockNum];
+                } else {
+                    this.selectedBlocks[rowNum][blockNum] = ui;
+                }
+
+                return;
+            }
+
+
             // undefine start to delete the block while validation
             this.dataManager.updateBlock(rowNum, blockNum, {"start" : null, "end" : null });
 

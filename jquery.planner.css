@@ -185,7 +185,7 @@ div.planner-block {
     -webkit-border-radius: 5px;
 }
 
-div.planner-block.active {
+div.planner-block.selected {
     z-index: 1;
     opacity: 0.6;
     filter:alpha(opacity=60);
