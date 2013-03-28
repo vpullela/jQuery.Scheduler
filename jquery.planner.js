@@ -150,7 +150,7 @@ boundary: {left : object/string right: object/string}
         },
 
         getData: function() {
-            return this.dataManager.getDataJson();
+            return this.dataManager.getData();
         },
 
         setData: function(data) {
@@ -600,27 +600,33 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            ui.helper.addClass("selected");
-            var rowNum = ui.helper.data("rowNum");
-            var blockNum = ui.helper.data("blockNum");
-
-            // TODO:: duplication
-            if (!(rowNum in this.selectedBlocks)) {
-                this.selectedBlocks[rowNum] = {};
-            }
-            if (!(blockNum in this.selectedBlocks[rowNum])) {
-                this.selectedBlocks[rowNum][blockNum] = ui.helper;
-            }
+            /* empty */
         },
         onDragBlock: function(e, ui) {
-            for (var rowNum in this.selectedBlocks) {
-                for (var blockNum in this.selectedBlocks[rowNum]) {
-                    var block = this.selectedBlocks[rowNum][blockNum];
-                    var blockLeft = parseInt(block.css("left"), 10) || 0;
+            var draggedBlock = ui.helper;
+            var blockLeft = parseInt(draggedBlock.css("left"), 10) || 0;
 
-                    if (blockLeft != ui.position.left) {
-                        this.isBlocksDragged = true;
-                        
+            if (!this.isBlocksDragged && blockLeft != ui.position.left) {
+                this.isBlocksDragged = true;
+
+                draggedBlock.addClass("selected");
+                var rowNum = draggedBlock.data("rowNum");
+                var blockNum = draggedBlock.data("blockNum");
+
+                // TODO:: duplication
+                if (!(rowNum in this.selectedBlocks)) {
+                    this.selectedBlocks[rowNum] = {};
+                }
+                if (!(blockNum in this.selectedBlocks[rowNum])) {
+                    this.selectedBlocks[rowNum][blockNum] = ui.helper;
+                }
+            }
+            
+            if (this.isBlocksDragged) {
+                for (var rowNum in this.selectedBlocks) {
+                    for (var blockNum in this.selectedBlocks[rowNum]) {
+                        var block = this.selectedBlocks[rowNum][blockNum];
+                            
                         block.css({
                             left: ui.position.left
                         });
@@ -629,21 +635,16 @@ boundary: {left : object/string right: object/string}
             }
         },
         onDragBlockStop: function(e, ui) {
-
             if (!this.isBlocksDragged) {
                 return;
             }
             this.isBlocksDragged = false;
 
+            var grid = this.hzHeader.getGrid();
+
             for (var rowNum in this.selectedBlocks) {
-                for (var blockNum in this.selectedBlocks[rowNum]) {
-                    var block = this.selectedBlocks[rowNum][blockNum];
+                this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
 
-                    this.dataManager.updateBlock(rowNum, blockNum, this.calculateDates(block));
-
-                    block.removeClass("selected");
-                    delete this.selectedBlocks[rowNum][blockNum];
-                }
                 this.containerArray[rowNum].render();
             }
         },
@@ -656,7 +657,7 @@ boundary: {left : object/string right: object/string}
             var date = grid.getDateByPos(e.pageX);
             var rowNum = ui.data("rowNum");
             var blockNum = ui.data("blockNum");
-            
+
             if (e.ctrlKey) {
                 ui.toggleClass('selected');
 
@@ -693,7 +694,6 @@ boundary: {left : object/string right: object/string}
 
             this.containerArray[rowNumber].render();
         },
-
         calculateDates: function(elementJquery) {
             var grid = this.hzHeader.getGrid();
 
@@ -829,134 +829,60 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * DataManager class
+     * DataAgregator class
      */
-    function DataManager(options) {
+    function DataAgregator(options, boundary, data) {
         this.options = options;
+        this.boundary = boundary;
+        this.rowList = [];
 
-        this._init();
+        this.minDate = undefined;
+        this.maxDate = undefined;
+
+        this.setData(data);
     }
-
-    $.extend(DataManager.prototype, {
-        _init: function() {
-            this.data = [];
-
-            this.boundary = {};
-            if (this.options.boundary) {
-                this.boundary = {
-                    left : DateUtils.convertToDate(this.options.boundary.left, this.options.dateFormat),
-                    right : DateUtils.convertToDate(this.options.boundary.right, this.options.dateFormat),
-                }
-            }
-
-            this.minDate = undefined;
-            this.maxDate = undefined;
+    
+    $.extend(DataAgregator.prototype, {
+        addRow: function (row) {
+            this.rowList.push(this.prepareRowData(row, false));
         },
-
-        //table
-        setData: function(data) {
-            this._init();
-
-            var data = data || []
-            for (var i=0; i < data.length; i++) {
-                var series  = data[i].series || [];
-                series = this.prepareRowData(series, false);
-
-                this.data.push({
-                    "metadata" : (data[i].metadata || []),
-                    "series" : series
-                });
-            }
-
-            this.boundary.left = this.boundary.left || this.minDate || new Date();
-            this.boundary.right = this.boundary.right || this.maxDate || new Date();
-        },
-
-        getData: function() {
-            return this.data;
-        },
-
-        getDataJson: function() {
-            var convertedData = [];
-            for (var i in this.data) {
-                var row  = this.data[i];
-                var convertedRow = {
-                    metadata: row.metadata,
-                    series: []
-                };
-                for (var j in row.series) {
-                    var serie = row.series[j];
-                    var convertedSerie = $.extend({}, serie); // clone object
-                    
-                    convertedSerie.start = serie.start.toString(this.options.dateFormat),
-                    convertedSerie.end = serie.end.toString(this.options.dateFormat),
-
-                    convertedRow.series.push(convertedSerie);
-                } 
-                convertedData.push(convertedRow);
+        
+        getAgregate: function() {
+            var result = [];
+            
+            for (rowNum in this.rowList) {
+                row = this.rowList[rowNum];
+                result = result.concat(row);
             }
             
-           return convertedData;
+            return this.prepareRowData(result, false);
         },
-
-        // row
-        setRowData: function(rowNumber, rowData) {
-            this.data[rowNumber].series = this.prepareRowData(rowData);
-        },
-        getRowData: function(rowNumber) {
-            return this.data[rowNumber].series;
-        },
-        addBlock: function(rowNumber, blockData) {
-            var rowData = this.data[rowNumber].series;
-            rowData.push(blockData);
-            this.data[rowNumber].series = this.prepareRowData(rowData);
-        },
-        deleteBlock: function(rowNumber, date) {
-            var rowData = this.data[rowNumber].series;
-            for(var i=0; i < rowData.length; i++) {
-                if (data.between(rowData[i].start, rowData[i].end)) {
-                    rowData.splice(i, 1);
-                }
+        
+        setAgregate: function(row) {
+            row = this.prepareRowData(row, true);
+            for (rowNum in this.rowList) {
+                this.rowList[rowNum] = row;
             }
         },
-
-        // block
-        updateBlock: function (rowNumber, blockNumber, blockData) {
-            var rowData = this.data[rowNumber].series;
-            $.extend(rowData[blockNumber], blockData);
-            this.data[rowNumber].series = this.prepareRowData(rowData);
-        },
-
-        // vtMenu
-        getNumberOfRows: function() {
-            return this.data.length;
-        },
-        getRowNames: function() {
-            var rowNameList = [];
-            for (var i=0; i < this.data.length; i++) {
-                rowNameList.push(this.data[i].metadata.name);
+        
+        setData: function(data) {
+            for (rowNum in data) {
+                this.addRow(data[rowNum]);
             }
-            return rowNameList;
         },
-
-        // hzMenu
-        getBoundary: function() {
-            return this.boundary;
+        
+        getData: function() {
+            return this.rowList;
         },
-        getBoundaryAdjusted: function() {
-            var minDays = Math.floor(this.options.containerWidth()/this.options.cellWidth);
-            var minBoundaryRight = this.boundary.left.clone().addDays(minDays);
-
-            var boundaryAdj = {};
-            boundaryAdj.left = this.boundary.left;
-            boundaryAdj.right = this.boundary.right;
-            if (minBoundaryRight.compareTo(boundaryAdj.right) > 0) {
-                boundaryAdj.right = minBoundaryRight;
-            }
-
-            return boundaryAdj;
+        
+        getMinDate: function() {
+            return this.minDate;
         },
-
+        
+        getMaxDate: function() {
+            return this.maxDate;
+        },
+        
         // helper functions
         prepareRowData: function(rowData, checkBoundary) {
             var correctArr = [];
@@ -1047,6 +973,169 @@ boundary: {left : object/string right: object/string}
 
             return mergedArr;
         },
+    });
+    
+
+    /**
+     * DataManager class
+     */
+    function DataManager(options) {
+        this.options = options;
+
+        this._init();
+    }
+
+    $.extend(DataManager.prototype, {
+        _init: function() {
+            this.data = [];
+
+            this.boundary = {};
+            if (this.options.boundary) {
+                this.boundary = {
+                    left : DateUtils.convertToDate(this.options.boundary.left, this.options.dateFormat),
+                    right : DateUtils.convertToDate(this.options.boundary.right, this.options.dateFormat),
+                }
+            }
+        },
+
+        //table
+        setData: function(data) {
+            this._init();
+
+            var data = data || [];
+            var minDate = undefined;
+            var maxDate = undefined;
+            for (var rowNum in data) {
+                var agregator = new DataAgregator(this.options, this.boundary, data[rowNum].data);
+
+                this.data.push({
+                    metadata: (data[rowNum].metadata || []),
+                    agregator: agregator
+                });
+                
+                if (!minDate || minDate.compareTo(agregator.getMinDate()) > 0) {
+                    minDate = agregator.getMinDate();
+                }
+                if (!maxDate || maxDate.compareTo(agregator.getMaxDate()) < 0) {
+                    maxDate = agregator.getMaxDate();
+                }
+            }
+
+            this.boundary.left = this.boundary.left || minDate || new Date();
+            this.boundary.right = this.boundary.right || maxDate || new Date();
+        },
+
+        getData: function() {
+            var result = [];
+            
+            for (rowNum in this.data) {
+                var oldRow = this.data[rowNum];
+                var newRow = {
+                    metadata: oldRow.metadata,
+                    data: oldRow.agregator.getData()
+                }
+                result.push(newRow);
+            }
+            return result;
+        },
+
+        getDataJson: function() {
+            var convertedData = [];
+            for (var i in this.data) {
+                var row  = this.data[i];
+                var convertedRow = {
+                    metadata: row.metadata,
+                    series: []
+                };
+                for (var j in row.series) {
+                    var serie = row.series[j];
+                    var convertedSerie = $.extend({}, serie); // clone object
+                    
+                    convertedSerie.start = serie.start.toString(this.options.dateFormat),
+                    convertedSerie.end = serie.end.toString(this.options.dateFormat),
+
+                    convertedRow.series.push(convertedSerie);
+                } 
+                convertedData.push(convertedRow);
+            }
+            
+           return convertedData;
+        },
+
+        // row
+        setRowData: function(rowNumber, rowData) {
+            this.data[rowNumber].agregator.setAgregate(this.prepareRowData(rowData));
+        },
+        getRowData: function(rowNumber) {
+            return this.data[rowNumber].agregator.getAgregate();
+        },
+        addBlock: function(rowNumber, blockData) {
+            var rowData = this.data[rowNumber].agregator.getAgregate();
+            rowData.push(blockData);
+            this.data[rowNumber].agregator.setAgregate(rowData);
+        },
+        deleteBlockList: function(rowNumber, blockNumberList) {
+            var rowData = this.data[rowNumber].agregator.getAgregate();
+
+            blockNumberList.sort().reverse();
+            for(var key in blockNumberList) {
+                blockNumber = parseInt(blockNumberList[key], 10);
+                rowData.splice(blockNumber, 1);
+            }
+
+            this.data[rowNumber].agregator.setAgregate(rowData);
+        },
+        updateRow: function(rowNum, selectedBlocks, grid) {
+            var rowData = this.data[rowNum].agregator.getAgregate();
+            for (var blockNum in selectedBlocks) {
+                var block = selectedBlocks[blockNum];
+
+                $.extend(rowData[blockNum], this.calculateDates(block, grid));
+
+                //TODO:: unselect???
+                block.removeClass("selected");
+                delete selectedBlocks[blockNum];
+            }
+            this.data[rowNum].agregator.setAgregate(rowData);
+        },
+
+        // block
+        updateBlock: function (rowNumber, blockNumber, blockData) {
+            var rowData = this.data[rowNumber].agregator.getAgregate();
+            $.extend(rowData[blockNumber], blockData);
+            this.data[rowNumber].agregator.setAgregate(rowData);
+        },
+
+        // vtMenu
+        getNumberOfRows: function() {
+            return this.data.length;
+        },
+        getRowNames: function() {
+            var rowNameList = [];
+            for (var i=0; i < this.data.length; i++) {
+                rowNameList.push(this.data[i].metadata.name);
+            }
+            return rowNameList;
+        },
+
+        // hzMenu
+        getBoundary: function() {
+            return this.boundary;
+        },
+        getBoundaryAdjusted: function() {
+            var minDays = Math.floor(this.options.containerWidth()/this.options.cellWidth);
+            var minBoundaryRight = this.boundary.left.clone().addDays(minDays);
+
+            var boundaryAdj = {};
+            boundaryAdj.left = this.boundary.left;
+            boundaryAdj.right = this.boundary.right;
+            if (minBoundaryRight.compareTo(boundaryAdj.right) > 0) {
+                boundaryAdj.right = minBoundaryRight;
+            }
+
+            return boundaryAdj;
+        },
+
         getNumberOfDays: function() {
             var boundary = this.getBoundary();
             return numberOfDays = DateUtils.daysBetween(boundary.left, boundary.right);
@@ -1054,6 +1143,27 @@ boundary: {left : object/string right: object/string}
         getNumberOfDaysAdjusted: function() {
             var boundaryAdj = this.getBoundaryAdjusted();
             return numberOfDays = DateUtils.daysBetween(boundaryAdj.left, boundaryAdj.right);
+        },
+        
+        // help functions
+        calculateDates: function(elementJquery, grid) {
+            /* calculate left border*/
+            var startDate = grid.getDateByPos(elementJquery.offset().left);
+
+            /* calculate right border */
+            var blockWidth = parseInt(elementJquery.css('width'), 10);
+            // HACK: workaround for date decrease when cellWidth <= 5
+            var blockDuration = Math.floor(blockWidth/this.options.cellWidth) + 1 * (this.options.cellWidth < 5) + 1 * (this.options.cellWidth < 3) + 2 * (this.options.cellWidth < 2);
+            var endDate = startDate.clone().addDays(blockDuration);
+
+            /* fit to grid */
+            var lastDate = grid[grid.length - 1].date;
+
+            if (endDate.compareTo(lastDate) > 0) {
+                endDate = lastDate;
+            }
+
+            return {"start" : startDate, "end" : endDate };
         }
     });
 

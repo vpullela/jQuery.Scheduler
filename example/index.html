@@ -27,20 +27,24 @@
     <script type="text/javascript">
         $(function () {
             var chart = $("#chart").planner({
+                                            //boundary: {left: "2012-01-01", right: "2014-01-20"},
                                             width: 900,
                                             showWeekends: true,
                                         });
 
             chart.planner("setData", plannerData );
+            //TODO: check rerender functionality
             chart.planner("option", {boundary: {left: "2012-01-01", right: "2014-01-20"}});
-            console.log(chart.planner("getData"));
+            //console.log(chart.planner("getData"));
 
 
             /* Test external events handling */
             $("#chart").bind("planneronclickonzoomout", function(event, data) { console.log(data); });
+            
+            $("#get_data").bind("click", function(event, data) {console.log(chart.planner("getData"));});
         });
 
     </script>
-   
+   <input id="get_data" type="button" value="data"></input>
 </body>
 </html>
