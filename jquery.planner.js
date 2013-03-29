@@ -489,6 +489,8 @@ boundary: {left : object/string right: object/string}
         this.containerArray = [];
         this.selectedBlocks = {};
         this.isBlocksDragged = false;
+        this.resizedWidth = 0;
+        this.resizedLeft = 0;
 
         this._init();
     }
@@ -561,6 +563,7 @@ boundary: {left : object/string right: object/string}
                     grid: this.cellWidth,
                     handles: "e,w",
                     start: $.proxy(this.onResizeBlockStart, this),
+                    resize: $.proxy(this.onResizeBlock, this),
                     stop: $.proxy(this.onResizeBlockStop, this)
                 });
 
@@ -576,6 +579,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onResizeBlockStart: function(e, ui) {
+            // TODO: duplication
             ui.element.after($("<div>", {
                 "css": {
                     "display": "inline-block",
@@ -587,10 +591,66 @@ boundary: {left : object/string right: object/string}
                 }
             }));
             ui.helper.addClass("selected");
+
+            for (var rowNum in this.selectedBlocks) {
+                for (var blockNum in this.selectedBlocks[rowNum]) {
+                    var block = this.selectedBlocks[rowNum][blockNum];
+                    block.css({
+                        position: "absolute",
+                        top: block.position().top,
+                        left: block.position().left,
+                    });
+                    // TODO: duplication
+                    block.after($("<div>", {
+                        "css": {
+                            "display": "inline-block",
+                            "position": "relative",
+                            "border" : "1px solid transparent",
+                            "width": ui.element.css("width"),
+                            "margin-left": ui.element.css("margin-left"),
+                            "margin-right": ui.element.css("margin-right")
+                        }
+                    }));
+                }
+            }
+            
+            this.resizedWidth = ui.helper.width() - 2;
+            this.resizedLeft = ui.helper.position().left;
+        },
+        onResizeBlock: function(e, ui) {
+            var diff = ui.helper.width() - this.resizedWidth;
+            var left = ui.helper.position().left- this.resizedLeft;
+
+            this.resizedWidth = ui.helper.width();
+            this.resizedLeft = ui.helper.position().left; 
+
+            if (diff == 0) {
+                return;
+            }
+
+            for (var rowNum in this.selectedBlocks) {
+                for (var blockNum in this.selectedBlocks[rowNum]) {
+                    var block = this.selectedBlocks[rowNum][blockNum];
+                    block.css({
+                        width: block.width() + diff + 2,
+                        left: block.position().left + left,
+                    });
+                }
+            }
         },
         onResizeBlockStop: function(e, ui) {
             ui.helper.removeClass("selected");
             ui.element.next().remove();
+
+            for (var rowNum in this.selectedBlocks) {
+                for (var blockNum in this.selectedBlocks[rowNum]) {
+                    var block = this.selectedBlocks[rowNum][blockNum];
+                    block.next().remove();
+                }
+                
+                this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
+                this.containerArray[rowNum].render();
+            }
 
             var rowNum = ui.element.data("rowNum");
             var blockNum = ui.element.data("blockNum");
@@ -626,7 +686,7 @@ boundary: {left : object/string right: object/string}
                 for (var rowNum in this.selectedBlocks) {
                     for (var blockNum in this.selectedBlocks[rowNum]) {
                         var block = this.selectedBlocks[rowNum][blockNum];
-                            
+
                         block.css({
                             left: ui.position.left
                         });
@@ -644,7 +704,6 @@ boundary: {left : object/string right: object/string}
 
             for (var rowNum in this.selectedBlocks) {
                 this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
-
                 this.containerArray[rowNum].render();
             }
         },
