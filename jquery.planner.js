@@ -579,18 +579,19 @@ boundary: {left : object/string right: object/string}
         },
 
         onResizeBlockStart: function(e, ui) {
-            // TODO: duplication
-            ui.element.after($("<div>", {
-                "css": {
-                    "display": "inline-block",
-                    "position": "relative",
-                    "border" : "1px solid transparent",
-                    "width": ui.element.css("width"),
-                    "margin-left": ui.element.css("margin-left"),
-                    "margin-right": ui.element.css("margin-right")
-                }
-            }));
-            ui.helper.addClass("selected");
+            var resizedBlock = ui.helper;
+
+            // TODO:: duplication add block to selection
+            resizedBlock.addClass("selected");
+            var rowNum = resizedBlock.data("rowNum");
+            var blockNum = resizedBlock.data("blockNum");
+
+            if (!(rowNum in this.selectedBlocks)) {
+                this.selectedBlocks[rowNum] = {};
+            }
+            if (!(blockNum in this.selectedBlocks[rowNum])) {
+                this.selectedBlocks[rowNum][blockNum] = resizedBlock;
+            }
 
             for (var rowNum in this.selectedBlocks) {
                 for (var blockNum in this.selectedBlocks[rowNum]) {
@@ -600,15 +601,15 @@ boundary: {left : object/string right: object/string}
                         top: block.position().top,
                         left: block.position().left,
                     });
-                    // TODO: duplication
+
                     block.after($("<div>", {
                         "css": {
                             "display": "inline-block",
                             "position": "relative",
                             "border" : "1px solid transparent",
-                            "width": ui.element.css("width"),
-                            "margin-left": ui.element.css("margin-left"),
-                            "margin-right": ui.element.css("margin-right")
+                            "width": block.css("width"),
+                            "margin-left": block.css("margin-left"),
+                            "margin-right": block.css("margin-right")
                         }
                     }));
                 }
@@ -618,11 +619,13 @@ boundary: {left : object/string right: object/string}
             this.resizedLeft = ui.helper.position().left;
         },
         onResizeBlock: function(e, ui) {
-            var diff = ui.helper.width() - this.resizedWidth;
-            var left = ui.helper.position().left- this.resizedLeft;
+            var resizedBlock = ui.helper;
 
-            this.resizedWidth = ui.helper.width();
-            this.resizedLeft = ui.helper.position().left; 
+            var diff = resizedBlock.width() - this.resizedWidth;
+            var left = resizedBlock.position().left- this.resizedLeft;
+
+            this.resizedWidth = resizedBlock.width();
+            this.resizedLeft = resizedBlock.position().left; 
 
             if (diff == 0) {
                 return;
@@ -630,6 +633,10 @@ boundary: {left : object/string right: object/string}
 
             for (var rowNum in this.selectedBlocks) {
                 for (var blockNum in this.selectedBlocks[rowNum]) {
+                    /** workaround: elimination double width calculation  */
+                    if (rowNum == resizedBlock.data("rowNum") && blockNum == resizedBlock.data("blockNum")) {
+                        continue;
+                    }
                     var block = this.selectedBlocks[rowNum][blockNum];
                     block.css({
                         width: block.width() + diff + 2,
@@ -641,6 +648,8 @@ boundary: {left : object/string right: object/string}
         onResizeBlockStop: function(e, ui) {
             ui.helper.removeClass("selected");
             ui.element.next().remove();
+            
+            var grid = this.hzHeader.getGrid();
 
             for (var rowNum in this.selectedBlocks) {
                 for (var blockNum in this.selectedBlocks[rowNum]) {
@@ -651,12 +660,6 @@ boundary: {left : object/string right: object/string}
                 this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
                 this.containerArray[rowNum].render();
             }
-
-            var rowNum = ui.element.data("rowNum");
-            var blockNum = ui.element.data("blockNum");
-            this.dataManager.updateBlock(rowNum, blockNum, this.calculateDates(ui.element));
-
-            this.containerArray[rowNum].render();
         },
 
         onDragBlockStart: function(e, ui) {
@@ -669,16 +672,16 @@ boundary: {left : object/string right: object/string}
             if (!this.isBlocksDragged && blockLeft != ui.position.left) {
                 this.isBlocksDragged = true;
 
+                // TODO:: duplication add block to selection
                 draggedBlock.addClass("selected");
                 var rowNum = draggedBlock.data("rowNum");
                 var blockNum = draggedBlock.data("blockNum");
 
-                // TODO:: duplication
                 if (!(rowNum in this.selectedBlocks)) {
                     this.selectedBlocks[rowNum] = {};
                 }
                 if (!(blockNum in this.selectedBlocks[rowNum])) {
-                    this.selectedBlocks[rowNum][blockNum] = ui.helper;
+                    this.selectedBlocks[rowNum][blockNum] = draggedBlock;
                 }
             }
             
@@ -753,26 +756,6 @@ boundary: {left : object/string right: object/string}
 
             this.containerArray[rowNumber].render();
         },
-        calculateDates: function(elementJquery) {
-            var grid = this.hzHeader.getGrid();
-
-            /* calculate left border*/
-            var startDate = grid.getDateByPos(elementJquery.offset().left);
-
-            /* calculate right border */
-            var blockWidth = parseInt(elementJquery.css('width'), 10);
-            // HACK: workaround for date decrease when cellWidth <= 5
-            var blockDuration = Math.floor(blockWidth/this.cellWidth) + 1 * (this.cellWidth < 5) + 1 * (this.cellWidth < 3) + 2 * (this.cellWidth < 2);
-            var endDate = startDate.clone().addDays(blockDuration);
-
-            /* fit to grid */
-            var lastDate = grid[grid.length - 1].date;
-            if (endDate.compareTo(lastDate) > 0) {
-                endDate = lastDate;
-            }
-
-            return {"start" : startDate, "end" : endDate };
-        }
     });
 
     /**
