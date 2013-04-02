@@ -583,7 +583,6 @@ boundary: {left : object/string right: object/string}
 
             this.selectedBlocks.addBlock(resizedBlock);
 
-
             var rowIterator = this.selectedBlocks.getIterator();
             while (rowIterator.hasNext()) {
                 var row = rowIterator.next();
@@ -591,12 +590,6 @@ boundary: {left : object/string right: object/string}
                 var blockIterator = row.getIterator();
                 while (blockIterator.hasNext()) {
                     var block = blockIterator.next();
-
-                    block.css({
-                        position: "absolute",
-                        top: block.position().top,
-                        left: block.position().left,
-                    });
 
                     block.after($("<div>", {
                         "css": {
@@ -608,6 +601,17 @@ boundary: {left : object/string right: object/string}
                             "margin-right": block.css("margin-right")
                         }
                     }));
+                }
+
+                blockIterator = row.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+
+                    block.css({
+                        position: "absolute",
+                        top: block.position().top,
+                        left: block.position().left,
+                    });
                 }
             }
 
@@ -621,7 +625,7 @@ boundary: {left : object/string right: object/string}
             var left = resizedBlock.position().left- this.resizedLeft;
 
             this.resizedWidth = resizedBlock.width();
-            this.resizedLeft = resizedBlock.position().left; 
+            this.resizedLeft = resizedBlock.position().left;
 
             if (diff == 0) {
                 return;
@@ -637,7 +641,6 @@ boundary: {left : object/string right: object/string}
 
                     /** workaround: elimination double width calculation  */
                     if (block.data("rowNum") == resizedBlock.data("rowNum") && block.data("blockNum") == resizedBlock.data("blockNum")) {
-                        console.log(1);
                         continue;
                     }
 
@@ -649,11 +652,8 @@ boundary: {left : object/string right: object/string}
             }
         },
         onResizeBlockStop: function(e, ui) {
-            ui.helper.removeClass("selected");
-            ui.element.next().remove();
-            
+            /* TODO: ?duplication onDragBlockStop */
             var grid = this.hzHeader.getGrid();
-
             var rowIterator = this.selectedBlocks.getIterator();
             while (rowIterator.hasNext()) {
                 var row = rowIterator.next();
@@ -661,10 +661,11 @@ boundary: {left : object/string right: object/string}
                 var blockIterator = row.getIterator();
                 while (blockIterator.hasNext()) {
                     var block = blockIterator.next();
+                    block = $.extend(block, this.calculateDates(block, grid));
                     block.next().remove();
                 }
-                
-                this.dataManager.updateRow(row.order, row.blockList, grid);
+
+                this.dataManager.updateRow(row.order, row.blockList);
                 this.containerArray[row.order].render();
             }
         },
@@ -681,7 +682,7 @@ boundary: {left : object/string right: object/string}
 
                 this.selectedBlocks.addBlock(draggedBlock);
             }
-            
+
             if (this.isBlocksDragged) {
                 var rowIterator = this.selectedBlocks.getIterator();
                 while (rowIterator.hasNext()) {
@@ -704,19 +705,26 @@ boundary: {left : object/string right: object/string}
             }
             this.isBlocksDragged = false;
 
+            /* TODO:: add onScrollStop - grid calculation */
             var grid = this.hzHeader.getGrid();
-
             var rowIterator = this.selectedBlocks.getIterator();
-            while(rowIterator.hasNext()) {
+            while (rowIterator.hasNext()) {
                 var row = rowIterator.next();
-                this.dataManager.updateRow(row.order, row.blockList, grid);
+
+                var blockIterator = row.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+                    block = $.extend(block, this.calculateDates(block, grid));
+                }
+
+                this.dataManager.updateRow(row.order, row.blockList);
                 this.containerArray[row.order].render();
             }
         },
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
-            
+
             var ui = $(e.currentTarget);
 
             if (e.ctrlKey) {
@@ -724,7 +732,7 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            /* TODO: rewrite onClick default functionality */ 
+            /* TODO: rewrite onClick default functionality */
             // undefine start to delete the block while validation
             var rowNum = ui.data("rowNum");
             var blockNum = ui.data("blockNum");
@@ -746,6 +754,27 @@ boundary: {left : object/string right: object/string}
 
             this.containerArray[rowNumber].render();
         },
+
+        // help functions
+        calculateDates: function(elementJquery, grid) {
+            /* calculate left border*/
+            var startDate = grid.getDateByPos(elementJquery.offset().left);
+
+            /* calculate right border */
+            var blockWidth = parseInt(elementJquery.css('width'), 10);
+            // HACK: workaround for date decrease when cellWidth <= 5
+            var blockDuration = Math.floor(blockWidth/this.options.cellWidth) + 1 * (this.options.cellWidth < 5) + 1 * (this.options.cellWidth < 3) + 2 * (this.options.cellWidth < 2);
+            var endDate = startDate.clone().addDays(blockDuration);
+
+            /* fit to grid */
+            var lastDate = grid[grid.length - 1].date;
+
+            if (endDate.compareTo(lastDate) > 0) {
+                endDate = lastDate;
+            }
+
+            return {"start" : startDate, "end" : endDate };
+        }
     });
 
     /**
@@ -893,16 +922,16 @@ boundary: {left : object/string right: object/string}
                 row = new DataRow(rowNum);
                 this.addRow(row);
             }
-            
+
             if (!row.getBlock(blockNum)) {
                 row.addBlock(block);
             }
         },
-        
+
         addRow: function(row) {
             this.selectedBlocks.push(row);
         },
-        
+
         getRow: function(rowNum) {
             var rowIterator = this.getIterator();
             while (rowIterator.hasNext()) {
@@ -912,15 +941,15 @@ boundary: {left : object/string right: object/string}
                 }
             }
             return false;
-        }, 
-        
+        },
+
         getIterator: function() {
             return new ArrayIterator(this.selectedBlocks);
         },
     });
-    
+
     /**
-     *  DataRow class 
+     *  DataRow class
      */
     function DataRow(rowNum) {
         this.order = rowNum;
@@ -937,11 +966,11 @@ boundary: {left : object/string right: object/string}
             }
             return false;
         },
-        
+
         addBlock: function(block) {
             this.blockList.push(block);
         },
-        
+
         getIterator: function() {
             return new ArrayIterator(this.blockList);
         }
@@ -964,43 +993,43 @@ boundary: {left : object/string right: object/string}
         addRow: function (row) {
             this.rowList.push(this.prepareRowData(row, false));
         },
-        
+
         getAgregate: function() {
             var result = [];
-            
+
             for (rowNum in this.rowList) {
                 row = this.rowList[rowNum];
                 result = result.concat(row);
             }
-            
+
             return this.prepareRowData(result, false);
         },
-        
+
         setAgregate: function(row) {
             row = this.prepareRowData(row, true);
             for (rowNum in this.rowList) {
                 this.rowList[rowNum] = row;
             }
         },
-        
+
         setData: function(data) {
             for (rowNum in data) {
                 this.addRow(data[rowNum]);
             }
         },
-        
+
         getData: function() {
             return this.rowList;
         },
-        
+
         getMinDate: function() {
             return this.minDate;
         },
-        
+
         getMaxDate: function() {
             return this.maxDate;
         },
-        
+
         // helper functions
         prepareRowData: function(rowData, checkBoundary) {
             var correctArr = [];
@@ -1092,7 +1121,7 @@ boundary: {left : object/string right: object/string}
             return mergedArr;
         },
     });
-    
+
 
     /**
      * DataManager class
@@ -1130,7 +1159,7 @@ boundary: {left : object/string right: object/string}
                     metadata: (data[rowNum].metadata || []),
                     agregator: agregator
                 });
-                
+
                 if (!minDate || minDate.compareTo(agregator.getMinDate()) > 0) {
                     minDate = agregator.getMinDate();
                 }
@@ -1145,7 +1174,7 @@ boundary: {left : object/string right: object/string}
 
         getData: function() {
             var result = [];
-            
+
             for (rowNum in this.data) {
                 var oldRow = this.data[rowNum];
                 var newRow = {
@@ -1168,15 +1197,15 @@ boundary: {left : object/string right: object/string}
                 for (var j in row.series) {
                     var serie = row.series[j];
                     var convertedSerie = $.extend({}, serie); // clone object
-                    
+
                     convertedSerie.start = serie.start.toString(this.options.dateFormat),
                     convertedSerie.end = serie.end.toString(this.options.dateFormat),
 
                     convertedRow.series.push(convertedSerie);
-                } 
+                }
                 convertedData.push(convertedRow);
             }
-            
+
            return convertedData;
         },
 
@@ -1203,18 +1232,16 @@ boundary: {left : object/string right: object/string}
 
             this.data[rowNumber].agregator.setAgregate(rowData);
         },
-        updateRow: function(rowNum, selectedBlocks, grid) {
+        updateRow: function(rowNum, selectedBlocks) {
             var rowData = this.data[rowNum].agregator.getAgregate();
 
             for (var blockNum in selectedBlocks) {
-                var block = selectedBlocks[blockNum];
-
-                $.extend(rowData[block.data("blockNum")], this.calculateDates(block, grid));
-
-                //TODO:: unselect???
-                block.removeClass("selected");
-                selectedBlocks.splice(blockNum, 1);
+                var newBlock = selectedBlocks[blockNum];
+                var oldBlock = rowData[newBlock.data("blockNum")];
+console.log(newBlock.data("blockNum"));
+                oldBlock = $.extend(oldBlock, newBlock);
             }
+            selectedBlocks.length = 0;
             this.data[rowNum].agregator.setAgregate(rowData);
         },
 
@@ -1263,27 +1290,6 @@ boundary: {left : object/string right: object/string}
             var boundaryAdj = this.getBoundaryAdjusted();
             return numberOfDays = DateUtils.daysBetween(boundaryAdj.left, boundaryAdj.right);
         },
-        
-        // help functions
-        calculateDates: function(elementJquery, grid) {
-            /* calculate left border*/
-            var startDate = grid.getDateByPos(elementJquery.offset().left);
-
-            /* calculate right border */
-            var blockWidth = parseInt(elementJquery.css('width'), 10);
-            // HACK: workaround for date decrease when cellWidth <= 5
-            var blockDuration = Math.floor(blockWidth/this.options.cellWidth) + 1 * (this.options.cellWidth < 5) + 1 * (this.options.cellWidth < 3) + 2 * (this.options.cellWidth < 2);
-            var endDate = startDate.clone().addDays(blockDuration);
-
-            /* fit to grid */
-            var lastDate = grid[grid.length - 1].date;
-
-            if (endDate.compareTo(lastDate) > 0) {
-                endDate = lastDate;
-            }
-
-            return {"start" : startDate, "end" : endDate };
-        }
     });
 
 /*==============================================================================
