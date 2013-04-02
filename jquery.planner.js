@@ -487,7 +487,7 @@ boundary: {left : object/string right: object/string}
         this.hzHeader = hzHeader;
         this.cellWidth = this.options.cellWidth;
         this.containerArray = [];
-        this.selectedBlocks = {};
+        this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
         this.resizedLeft = 0;
@@ -581,21 +581,17 @@ boundary: {left : object/string right: object/string}
         onResizeBlockStart: function(e, ui) {
             var resizedBlock = ui.helper;
 
-            // TODO:: duplication add block to selection
-            resizedBlock.addClass("selected");
-            var rowNum = resizedBlock.data("rowNum");
-            var blockNum = resizedBlock.data("blockNum");
+            this.selectedBlocks.addBlock(resizedBlock);
 
-            if (!(rowNum in this.selectedBlocks)) {
-                this.selectedBlocks[rowNum] = {};
-            }
-            if (!(blockNum in this.selectedBlocks[rowNum])) {
-                this.selectedBlocks[rowNum][blockNum] = resizedBlock;
-            }
 
-            for (var rowNum in this.selectedBlocks) {
-                for (var blockNum in this.selectedBlocks[rowNum]) {
-                    var block = this.selectedBlocks[rowNum][blockNum];
+            var rowIterator = this.selectedBlocks.getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+
+                var blockIterator = row.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+
                     block.css({
                         position: "absolute",
                         top: block.position().top,
@@ -614,7 +610,7 @@ boundary: {left : object/string right: object/string}
                     }));
                 }
             }
-            
+
             this.resizedWidth = ui.helper.width() - 2;
             this.resizedLeft = ui.helper.position().left;
         },
@@ -631,13 +627,20 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            for (var rowNum in this.selectedBlocks) {
-                for (var blockNum in this.selectedBlocks[rowNum]) {
+            var rowIterator = this.selectedBlocks.getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+
+                var blockIterator = row.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+
                     /** workaround: elimination double width calculation  */
-                    if (rowNum == resizedBlock.data("rowNum") && blockNum == resizedBlock.data("blockNum")) {
+                    if (block.data("rowNum") == resizedBlock.data("rowNum") && block.data("blockNum") == resizedBlock.data("blockNum")) {
+                        console.log(1);
                         continue;
                     }
-                    var block = this.selectedBlocks[rowNum][blockNum];
+
                     block.css({
                         width: block.width() + diff + 2,
                         left: block.position().left + left,
@@ -651,14 +654,18 @@ boundary: {left : object/string right: object/string}
             
             var grid = this.hzHeader.getGrid();
 
-            for (var rowNum in this.selectedBlocks) {
-                for (var blockNum in this.selectedBlocks[rowNum]) {
-                    var block = this.selectedBlocks[rowNum][blockNum];
+            var rowIterator = this.selectedBlocks.getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+
+                var blockIterator = row.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
                     block.next().remove();
                 }
                 
-                this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
-                this.containerArray[rowNum].render();
+                this.dataManager.updateRow(row.order, row.blockList, grid);
+                this.containerArray[row.order].render();
             }
         },
 
@@ -672,23 +679,17 @@ boundary: {left : object/string right: object/string}
             if (!this.isBlocksDragged && blockLeft != ui.position.left) {
                 this.isBlocksDragged = true;
 
-                // TODO:: duplication add block to selection
-                draggedBlock.addClass("selected");
-                var rowNum = draggedBlock.data("rowNum");
-                var blockNum = draggedBlock.data("blockNum");
-
-                if (!(rowNum in this.selectedBlocks)) {
-                    this.selectedBlocks[rowNum] = {};
-                }
-                if (!(blockNum in this.selectedBlocks[rowNum])) {
-                    this.selectedBlocks[rowNum][blockNum] = draggedBlock;
-                }
+                this.selectedBlocks.addBlock(draggedBlock);
             }
             
             if (this.isBlocksDragged) {
-                for (var rowNum in this.selectedBlocks) {
-                    for (var blockNum in this.selectedBlocks[rowNum]) {
-                        var block = this.selectedBlocks[rowNum][blockNum];
+                var rowIterator = this.selectedBlocks.getIterator();
+                while (rowIterator.hasNext()) {
+                    var row = rowIterator.next();
+
+                    var blockIterator = row.getIterator();
+                    while (blockIterator.hasNext()) {
+                        var block = blockIterator.next();
 
                         block.css({
                             left: ui.position.left
@@ -705,9 +706,11 @@ boundary: {left : object/string right: object/string}
 
             var grid = this.hzHeader.getGrid();
 
-            for (var rowNum in this.selectedBlocks) {
-                this.dataManager.updateRow(rowNum, this.selectedBlocks[rowNum], grid);
-                this.containerArray[rowNum].render();
+            var rowIterator = this.selectedBlocks.getIterator();
+            while(rowIterator.hasNext()) {
+                var row = rowIterator.next();
+                this.dataManager.updateRow(row.order, row.blockList, grid);
+                this.containerArray[row.order].render();
             }
         },
 
@@ -715,29 +718,16 @@ boundary: {left : object/string right: object/string}
             e.stopPropagation();
             
             var ui = $(e.currentTarget);
-            var grid = this.hzHeader.getGrid();
-            var date = grid.getDateByPos(e.pageX);
-            var rowNum = ui.data("rowNum");
-            var blockNum = ui.data("blockNum");
 
             if (e.ctrlKey) {
-                ui.toggleClass('selected');
-
-                // TODO:: duplication
-                if (!(rowNum in this.selectedBlocks)) {
-                    this.selectedBlocks[rowNum] = {};
-                }
-                if (blockNum in this.selectedBlocks[rowNum]) {
-                    delete this.selectedBlocks[rowNum][blockNum];
-                } else {
-                    this.selectedBlocks[rowNum][blockNum] = ui;
-                }
-
+                this.selectedBlocks.addBlock(ui);
                 return;
             }
 
-
+            /* TODO: rewrite onClick default functionality */ 
             // undefine start to delete the block while validation
+            var rowNum = ui.data("rowNum");
+            var blockNum = ui.data("blockNum");
             this.dataManager.updateBlock(rowNum, blockNum, {"start" : null, "end" : null });
 
             this.containerArray[rowNum].render();
@@ -871,6 +861,93 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
+     * ArrayIterator class
+     */
+    function ArrayIterator(array) {
+        this.array = array;
+        this.index = 0;
+    }
+    $.extend(ArrayIterator.prototype, {
+        hasNext: function() {
+            return this.index < this.array.length;
+        },
+        next: function() {
+            return this.array[this.index++];
+        },
+    });
+
+    /**
+     * SelectedBlocks class
+     */
+    function SelectedBlocks() {
+        this.selectedBlocks = [];
+    }
+    $.extend(SelectedBlocks.prototype, {
+        addBlock: function(block) {
+            block.addClass("selected");
+            var rowNum = block.data("rowNum");
+            var blockNum = block.data("blockNum");
+
+            var row = this.getRow(rowNum);
+            if (!row) {
+                row = new DataRow(rowNum);
+                this.addRow(row);
+            }
+            
+            if (!row.getBlock(blockNum)) {
+                row.addBlock(block);
+            }
+        },
+        
+        addRow: function(row) {
+            this.selectedBlocks.push(row);
+        },
+        
+        getRow: function(rowNum) {
+            var rowIterator = this.getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+                if (row.order == rowNum) {
+                    return row;
+                }
+            }
+            return false;
+        }, 
+        
+        getIterator: function() {
+            return new ArrayIterator(this.selectedBlocks);
+        },
+    });
+    
+    /**
+     *  DataRow class 
+     */
+    function DataRow(rowNum) {
+        this.order = rowNum;
+        this.blockList = [];
+    }
+    $.extend(DataRow.prototype, {
+        getBlock: function(blockNum) {
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                if (block.data("blockNum") == blockNum) {
+                    return block;
+                }
+            }
+            return false;
+        },
+        
+        addBlock: function(block) {
+            this.blockList.push(block);
+        },
+        
+        getIterator: function() {
+            return new ArrayIterator(this.blockList);
+        }
+    });
+
+    /**
      * DataAgregator class
      */
     function DataAgregator(options, boundary, data) {
@@ -883,7 +960,6 @@ boundary: {left : object/string right: object/string}
 
         this.setData(data);
     }
-    
     $.extend(DataAgregator.prototype, {
         addRow: function (row) {
             this.rowList.push(this.prepareRowData(row, false));
@@ -1129,14 +1205,15 @@ boundary: {left : object/string right: object/string}
         },
         updateRow: function(rowNum, selectedBlocks, grid) {
             var rowData = this.data[rowNum].agregator.getAgregate();
+
             for (var blockNum in selectedBlocks) {
                 var block = selectedBlocks[blockNum];
 
-                $.extend(rowData[blockNum], this.calculateDates(block, grid));
+                $.extend(rowData[block.data("blockNum")], this.calculateDates(block, grid));
 
                 //TODO:: unselect???
                 block.removeClass("selected");
-                delete selectedBlocks[blockNum];
+                selectedBlocks.splice(blockNum, 1);
             }
             this.data[rowNum].agregator.setAgregate(rowData);
         },
