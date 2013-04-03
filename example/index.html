@@ -27,9 +27,9 @@
     <script type="text/javascript">
         $(function () {
             var chart = $("#chart").planner({
-                                            //boundary: {left: "2012-01-01", right: "2014-01-20"},
                                             width: 900,
                                             showWeekends: true,
+                                            expandBorder: true,
                                         });
 
             chart.planner("setData", plannerData );
