@@ -37,6 +37,7 @@ boundary: {left : object/string right: object/string}
             }
             if (name === "boundary") {
                 this.chart.setBoundaries(value);
+                return;
             }
 
             $.Widget.prototype._setOption.apply(this, arguments);
@@ -69,19 +70,24 @@ boundary: {left : object/string right: object/string}
         options.vtHeaderWidth = options.vtHeaderWidth || vtHeaderWidth || 100;
         options.showWeekends  = options.showWeekends  && true;         // false
         options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd";
-        options.boundary      = options.boundary                       || {left: new Date(), right: new Date()};
         options.expandBodrer  = options.expandBorder  && true;         // false  
         // calculabe options
         options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
+        
+        // set default baundaries
+        var minDays = Math.floor(options.containerWidth()/options.cellWidth);
+        var left = new Date();
+        var right = left.clone().addDays(minDays);
+        if (options.boundary && options.boudary.left) {
+            left = DateUtils.convertToDate(options.boundary.left, this.options.dateFormat);
+        }
+        if (options.boundary && options.boudary.right) {
+            right = DateUtils.convertToDate(options.boundary.right, this.options.dateFormat);
+        }
+        options.boundary = new DataBoundary(left, right, minDays);
 
         this.options = options;
-        this.boundary = new DataBoundary(
-            DateUtils.convertToDate(options.boundary.left, this.options.dateFormat),
-            DateUtils.convertToDate(options.boundary.right, this.options.dateFormat),
-            Math.floor(options.containerWidth()/options.cellWidth)
-        );
-        
-        this.dataManager = new DataManager(options, this.boundary);
+        this.dataManager = new DataManager(options);
 
         this._init();
     }
@@ -145,6 +151,7 @@ boundary: {left : object/string right: object/string}
             }
 
             this.options.cellWidth--;
+            this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
 
             this.slideContainer.render();
 
@@ -153,6 +160,7 @@ boundary: {left : object/string right: object/string}
 
         onClickOnZoomIn: function() {
             this.options.cellWidth++;
+            this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
 
             this.slideContainer.render();
         },
@@ -173,8 +181,8 @@ boundary: {left : object/string right: object/string}
         },
 
         setBoundaries: function(boundary) {
-            this.boundary.setLeft(DateUtils.convertToDate(boundary.left, this.options.dateFormat));
-            this.boundary.setRight(DateUtils.convertToDate(boundary.right, this.options.dateFormat));
+            this.options.boundary.setLeft(DateUtils.convertToDate(boundary.left, this.options.dateFormat));
+            this.options.boundary.setRight(DateUtils.convertToDate(boundary.right, this.options.dateFormat));
 
             // recalculate data table with new boundary
             this.dataManager.setData(this.dataManager.getData());
@@ -296,8 +304,8 @@ boundary: {left : object/string right: object/string}
             var hzHeader = new HzHeader(this.options, this.dataManager);
             var containerList = new ContainerList(this.options, this.dataManager, hzHeader);
 
-            var numberOfDays = this.dataManager.boundary.getNumberOfDays();
-            var numberOfDaysAdj = this.dataManager.boundary.getNumberOfDays(true);
+            var numberOfDays = this.options.boundary.getNumberOfDays();
+            var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
             var numberOfRows = this.dataManager.getNumberOfRows();
@@ -365,7 +373,7 @@ boundary: {left : object/string right: object/string}
 
         _init: function() {
             var dates = this.getDatePeriod();
-            var numberOfDays = this.dataManager.boundary.getNumberOfDays(true);
+            var numberOfDays = this.options.boundary.getNumberOfDays(true);
 
             var headerDiv = $("<div>", { "class": "planner-hzheader" });
             var monthsDiv = $("<div>", { "class": "planner-hzheader-months" });
@@ -438,8 +446,8 @@ boundary: {left : object/string right: object/string}
         // between the given start and end dates
         getDatePeriod: function() {
             var dates = [];
-            var left = this.dataManager.boundary.getLeft();
-            var rightAdj = this.dataManager.boundary.getRight(true);
+            var left = this.options.boundary.getLeft();
+            var rightAdj = this.options.boundary.getRight(true);
 
             dates[left.getFullYear()] = [];
             dates[left.getFullYear()][left.getMonth()] = [left]
@@ -509,7 +517,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(ContainerList.prototype, {
         _init: function() {
-            var numberOfDays = this.dataManager.boundary.getNumberOfDays();
+            var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -530,11 +538,13 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var numberOfRows = this.dataManager.getNumberOfRows();
-            for (var rowNumber = 0; rowNumber < numberOfRows; rowNumber++) {
-                var container = new Agregator(this.options, this.dataManager, this.hzHeader, rowNumber);
-                this.appendJquery(container);
-                this.containerArray.push(container);
+            var agregatorIterator = this.dataManager.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var dataAgregator = agregatorIterator.next();
+                var agregator = new Agregator(this.options, dataAgregator);
+                
+                this.appendJquery(agregator);
+                this.containerArray.push(agregator);
             }
         },
 
@@ -791,12 +801,10 @@ boundary: {left : object/string right: object/string}
     /**
      * Agregator class
      */
-    function Agregator(options, dataManager, hzHeader, rowNumber) {
+    function Agregator(options, dataAgregator) {
         this.options = options;
-        this.dataManager = dataManager;
-        this.hzHeader = hzHeader;
-        this.rowNumber = rowNumber
-        
+        this.dataAgregator = dataAgregator;
+
         this.cellWidth = this.options.cellWidth;
         this.containerArray = [];
         this.selectedBlocks = new SelectedBlocks();
@@ -810,7 +818,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(Agregator.prototype, {
         _init: function() {
-            var numberOfDays = this.dataManager.boundary.getNumberOfDays();
+            var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -830,16 +838,16 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var agregator = this.dataManager.data[this.rowNumber];
-            var rowData =  agregator.getData();
-            
-            for (var rowNum in rowData) {
-                var container = new Container(this.options, rowData[rowNum], rowNum,  this.dataManager.boundary.getLeft(), this.dataManager.boundary.getNumberOfDays(true));
+            var rowData =  this.dataAgregator.getData();
+            var rowIterator = this.dataAgregator.getIterator();
+            while (rowIterator.hasNext()) {
+                var dataRow = rowIterator.next();
+                
+                var row = new Container(this.options, dataRow);
 
-                this.appendJquery(container);
-                this.containerArray.push(container);
+                this.appendJquery(row);
+                this.containerArray.push(row);
             }
-            
         },
         removeContent: function() {
             $(this.containerArray).each(function() {
@@ -851,16 +859,15 @@ boundary: {left : object/string right: object/string}
         },
     });
 
-
     /**
      * Container class
      */
-    function Container(options, data, order, dayStart, numberOfDays) {
+    function Container(options, dataRow) {
         this.options = options;
-        this.data = data;
-        this.order = order;
-        this.dayStart = dayStart;
-        this.numberOfDays = numberOfDays;
+        this.data = dataRow.getBlockList();
+        this.order = dataRow.order;
+        this.dayStart = this.options.boundary.getLeft();
+        this.numberOfDays = this.options.boundary.getNumberOfDays(true);
 
         this.blockArray = [];
         this._init();
@@ -1023,11 +1030,22 @@ boundary: {left : object/string right: object/string}
     /**
      *  DataRow class
      */
-    function DataRow(rowNum) {
+    function DataRow(rowNum, blockList) {
         this.order = rowNum;
         this.blockList = [];
+        
+        if (blockList) {
+            this.setBlockList(blockList);
+        }
     }
     $.extend(DataRow.prototype, {
+        setBlockList: function(blockList) {
+            this.blockList = blockList;
+        },
+        getBlockList: function() {
+            return this.blockList;
+        },
+        
         getBlock: function(blockNum) {
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
@@ -1045,15 +1063,14 @@ boundary: {left : object/string right: object/string}
 
         getIterator: function() {
             return new ArrayIterator(this.blockList);
-        }
+        },
     });
 
     /**
      * DataAgregator class
      */
-    function DataAgregator(options, boundary, metadata, data) {
+    function DataAgregator(options, metadata, data) {
         this.options = options;
-        this.boundary = boundary;
         this.rowList = [];
 
         this.minDate = undefined;
@@ -1077,20 +1094,21 @@ boundary: {left : object/string right: object/string}
                 result = result.concat(row);
             }
 
-            return this.prepareRowData(result, false);
+            return this.prepareRowData(result);
         },
 
         setData: function(data) {
             for (rowNum in data) {
-                this.addRow(data[rowNum]);
+                this.addRow(rowNum, data[rowNum]);
             }
         },
         getData: function() {
             return this.rowList;
         },
 
-        addRow: function (row) {
-            this.rowList.push(this.prepareRowData(row, false));
+        addRow: function (rowNum, blockList) {
+            var dataRow = new DataRow(rowNum, this.prepareRowData(blockList));
+            this.rowList.push(dataRow);
         },
 
         getMinDate: function() {
@@ -1107,7 +1125,7 @@ boundary: {left : object/string right: object/string}
         },
 
         // helper functions
-        prepareRowData: function(rowData, checkBoundary) {
+        prepareRowData: function(rowData) {
             var correctArr = [];
             /* TODO: ? move to separete function */
             for(var i=0; i< rowData.length; i++) {
@@ -1128,19 +1146,19 @@ boundary: {left : object/string right: object/string}
                 /* fit to boundary */
                 if (!this.options.expandBorder) {
 
-                    if (rowData[i].start.compareTo(this.boundary.getLeft()) < 0
-                        && rowData[i].end.compareTo(this.boundary.getLeft()) < 0) {
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
+                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
                         continue;
                     }
-                    if (rowData[i].start.compareTo(this.boundary.getRight()) > 0
-                        && rowData[i].end.compareTo(this.boundary.getRight()) > 0) {
+                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
+                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
                         continue;
                     }
-                    if (rowData[i].start.compareTo(this.boundary.getLeft()) < 0) {
-                        rowData[i].start = this.boundary.getLeft();
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
+                        rowData[i].start = this.options.boundary.getLeft();
                     }
-                    if (rowData[i].end.compareTo(this.boundary.getRight()) > 0) {
-                        rowData[i].end = this.boundary.getRight();
+                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
+                        rowData[i].end = this.options.boundary.getRight();
                     }
                 }
 
@@ -1153,6 +1171,16 @@ boundary: {left : object/string right: object/string}
                 }
 
                 correctArr.push(rowData[i]);
+            }
+            
+            /* change bundaries */
+            if (this.options.expandBorder) { 
+                if (this.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
+                    this.options.boundary.setLeft(this.minDate);
+                }
+                if (this.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
+                    this.options.boundary.setRight(this.maxDate);
+                }
             }
 
             if (correctArr.length < 2) {
@@ -1196,15 +1224,17 @@ boundary: {left : object/string right: object/string}
 
             return mergedArr;
         },
+        getIterator: function() {
+            return new ArrayIterator(this.rowList);
+        }
     });
 
 
     /**
      * DataManager class
      */
-    function DataManager(options, boundary) {
+    function DataManager(options) {
         this.options = options;
-        this.boundary = boundary;
         this.data = [];
     }
 
@@ -1212,28 +1242,10 @@ boundary: {left : object/string right: object/string}
         //table
         setData: function(data) {
             this.data = [];
-            var minDate = this.boundary.getLeft();
-            var maxDate = this.boundary.getRight();
+
             for (var rowNum in data) {
-                var agregator = new DataAgregator(this.options, this.boundary, data[rowNum].metadata, data[rowNum].data);
-
+                var agregator = new DataAgregator(this.options, data[rowNum].metadata, data[rowNum].data);
                 this.data.push(agregator);
-
-                if (!minDate || minDate.compareTo(agregator.getMinDate()) > 0) {
-                    minDate = agregator.getMinDate();
-                }
-                if (!maxDate || maxDate.compareTo(agregator.getMaxDate()) < 0) {
-                    maxDate = agregator.getMaxDate();
-                }
-            }
-
-            if (this.options.expandBorder) { 
-                if (minDate.compareTo(this.boundary.getLeft()) < 0) {
-                    this.boundary.setLeft(minDate);
-                }
-                if (maxDate.compareTo(this.boundary.getRight()) > 0) {
-                    this.boundary.setRight(maxDate);
-                }
             }
         },
 
@@ -1243,9 +1255,16 @@ boundary: {left : object/string right: object/string}
             var agregatorIterator = this.getIterator();
             while (agregatorIterator.hasNext()) {
                 var agregator = agregatorIterator.next();
+                var rowIterator = agregator.getIterator();
+                var data = [];
+                while (rowIterator.hasNext()) {
+                    var row = rowIterator.next();
+                    data.push(row.getBlockList());
+                }
+                
                 var dataRow = {
                     metadata: agregator.metadata,
-                    data: agregator.getData()
+                    data: data
                 }
                 result.push(dataRow);
             }
@@ -1299,6 +1318,8 @@ boundary: {left : object/string right: object/string}
             this.data[rowNumber].setAgregate(rowData);
         },
         updateRow: function(rowNum, selectedBlocks) {
+            console.log(rowNum);
+
             var rowData = this.data[rowNum].getAgregate();
 
             for (var blockNum in selectedBlocks) {
