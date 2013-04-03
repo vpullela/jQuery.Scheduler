@@ -838,7 +838,6 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var rowData =  this.dataAgregator.getData();
             var rowIterator = this.dataAgregator.getIterator();
             while (rowIterator.hasNext()) {
                 var dataRow = rowIterator.next();
@@ -862,11 +861,10 @@ boundary: {left : object/string right: object/string}
     /**
      * Container class
      */
-    function Container(options, dataRow) {
+    function Container(options, rowModel) {
         this.options = options;
-        this.data = dataRow.getBlockList();
-        this.order = dataRow.order;
-        this.dayStart = this.options.boundary.getLeft();
+        this.rowModel = rowModel;
+
         this.numberOfDays = this.options.boundary.getNumberOfDays(true);
 
         this.blockArray = [];
@@ -887,7 +885,7 @@ boundary: {left : object/string right: object/string}
                 }
             });
             // TODO:: data method
-            container.data("rowNum", this.order);
+            container.data("rowNum", this.rowModel.order);
 
             this.setJquery(container);
 
@@ -897,14 +895,11 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var dayShift = this.dayStart;
-            /* TODO:: should use iterator */
-            for (var blockNumber = 0; blockNumber < this.data.length; blockNumber++) {
-                var blockData = this.data[blockNumber];
-                var block = new Block(this.options, dayShift, blockData, this.order, blockNumber);
+            var blockIterator = this.rowModel.getIterator();
+            while (blockIterator.hasNext()) {
+                var blockModel = blockIterator.next();
+                var block = new Block(this.options, blockModel, this.order);
                 this.blockArray.push(block);
-
-                dayShift = blockData.end.clone().addDays(1);
             }
 
             for (var i = 0; i < this.blockArray.length; i++) {
@@ -923,23 +918,22 @@ boundary: {left : object/string right: object/string}
     /**
      * Block class
      */
-    function Block(options, marginShift, blockData, rowNum, blockNum) {
+    function Block(options, blockModel, rowNum) {
         this.options = options;
         this.rowNum = rowNum;
-        this.blockNum = blockNum;
+        this.blockModel = blockModel;
 
-        this._init(marginShift, blockData);
+        this._init();
     }
     Block.prototype = Object.create(JQueryWrapper.prototype);
 
     $.extend(Block.prototype, {
-        _init: function(marginShift, blockData) {
+        _init: function() {
             this.cellWidth = this.options.cellWidth;
-            this.blockData = blockData;
 
             var cellHeight = this.options.cellHeight;
-            var size = DateUtils.daysBetween(this.blockData.start, this.blockData.end) + 1;
-            var offset = DateUtils.daysBetween(marginShift, this.blockData.start);
+            var size = DateUtils.daysBetween(this.blockModel.start(), this.blockModel.end()) + 1;
+            var offset = DateUtils.daysBetween(this.blockModel.getPreviousBlockEnd(), this.blockModel.start());
 
             var block = $("<div>", {
                 "class": "planner-block",
@@ -951,12 +945,12 @@ boundary: {left : object/string right: object/string}
                     "margin-right" : "2px"
                 }
             });
-            if (this.blockData.color) {
-                block.css("background-color", this.blockData.color);
+            if (this.blockModel.color()) {
+                block.css("background-color", this.blockModel.color());
             }
             // TODO:: data method
             block.data("rowNum", this.rowNum);
-            block.data("blockNum", this.blockNum);
+            block.data("blockNum", this.blockModel.order);
 
             // duration
             var textBlock = $("<div>", { "class": "planner-block-text" }).text(size);
@@ -1028,37 +1022,72 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
+     * DataBlock class
+     */
+    function DataBlock(options, blockNum, blockData, previousBlockEnd) {
+        this.options = options;
+        this.order = rowNum;
+        this.blockData = blockData;
+        /* first day in row if not set */
+        this.previousBlockEnd = previousBlockEnd || this.options.boundary.getLeft(); 
+    }
+    $.extend(DataBlock.prototype, {
+        start: function() {
+            return this.blockData.start;
+        },
+        end: function() {
+            return this.blockData.end;
+        },
+        color: function() {
+            return this.blockData.color;
+        },
+        getBlockData: function() {
+            return this.blockData;
+        },
+        setBlockData: function(blockData) {
+            this.blockData = blockData;
+        },
+        getPreviousBlockEnd: function() {
+            return this.previousBlockEnd;
+        }
+    });
+    
+    /**
      *  DataRow class
      */
-    function DataRow(rowNum, blockList) {
+    function DataRow(options, rowNum, blockList) {
+        this.options = options;
         this.order = rowNum;
         this.blockList = [];
-        
-        if (blockList) {
-            this.setBlockList(blockList);
-        }
+
+        this.setBlockList(blockList);
     }
     $.extend(DataRow.prototype, {
         setBlockList: function(blockList) {
-            this.blockList = blockList;
+            var previousBlockEnd = this.options.boundary.getLeft(); // first day in row
+            for (blockNum in blockList) {
+                var block = new DataBlock(this.options, blockNum, blockList[blockNum], previousBlockEnd); 
+                this.blockList.push(block);
+                previousBlockEnd = block.end().clone().addDays(1);
+            }
         },
         getBlockList: function() {
             return this.blockList;
         },
-        
+
+        addBlock: function(blockNum, blockData) {
+            var block = new DataBlock(blockNum, blockData);
+            this.blockList.push(block);
+        },
         getBlock: function(blockNum) {
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
-                if (block.data("blockNum") == blockNum) {
+                if (block.order == blockNum) {
                     return block;
                 }
             }
             return false;
-        },
-
-        addBlock: function(block) {
-            this.blockList.push(block);
         },
 
         getIterator: function() {
@@ -1107,7 +1136,7 @@ boundary: {left : object/string right: object/string}
         },
 
         addRow: function (rowNum, blockList) {
-            var dataRow = new DataRow(rowNum, this.prepareRowData(blockList));
+            var dataRow = new DataRow(this.options, rowNum, this.prepareRowData(blockList));
             this.rowList.push(dataRow);
         },
 
@@ -1259,7 +1288,13 @@ boundary: {left : object/string right: object/string}
                 var data = [];
                 while (rowIterator.hasNext()) {
                     var row = rowIterator.next();
-                    data.push(row.getBlockList());
+                    var rowData = [];
+                    var blockIterator = row.getIterator();
+                    while (blockIterator.hasNext()) {
+                        block = blockIterator.next();
+                        rowData.push(block.getBlockData());
+                    }
+                    data.push(rowData);
                 }
                 
                 var dataRow = {

@@ -4,7 +4,7 @@ var plannerData = [
             name: "Feature 1"
         },
         data: {
-            series: [ { start: "2013-01-03", end: "2013-01-05" }, ],
+            series: [ { start: "2013-01-03", end: "2013-01-05" }, { start: "2013-01-08", end: "2013-01-10" }],
             series1: [ { start: "2013-01-07", end: "2013-01-09" }, ]
         }
     }, 
