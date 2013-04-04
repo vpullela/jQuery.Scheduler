@@ -302,7 +302,7 @@ boundary: {left : object/string right: object/string}
             this.removeContent();
 
             var hzHeader = new HzHeader(this.options, this.dataManager);
-            var containerList = new ContainerList(this.options, this.dataManager, hzHeader);
+            var workbenchView = new WorkbenchView(this.options, this.dataManager, hzHeader);
 
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
@@ -329,14 +329,14 @@ boundary: {left : object/string right: object/string}
                 });
 
             this.contentArray.push(hzHeader);
-            this.contentArray.push(containerList);
+            this.contentArray.push(workbenchView);
 
             this.appendJquery(hzHeader);
-            this.ganttViewBody.append(containerList.getJquery());
+            this.ganttViewBody.append(workbenchView.getJquery());
             this.ganttViewBody.append(this.unavailableDiv);
             this.getJquery().append(this.ganttViewBody);
 
-            containerList.setEvents();
+            workbenchView.setEvents();
         },
 
         removeContent: function() {
@@ -498,9 +498,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * ContainerList class
+     * WorkbenchView class
      */
-    function ContainerList(options, dataManager, hzHeader) {
+    function WorkbenchView(options, dataManager, hzHeader) {
         this.options = options;
         this.dataManager = dataManager;
         this.hzHeader = hzHeader;
@@ -513,9 +513,9 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    ContainerList.prototype = Object.create(JQueryWrapper.prototype);
+    WorkbenchView.prototype = Object.create(JQueryWrapper.prototype);
 
-    $.extend(ContainerList.prototype, {
+    $.extend(WorkbenchView.prototype, {
         _init: function() {
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
@@ -541,10 +541,10 @@ boundary: {left : object/string right: object/string}
             var agregatorIterator = this.dataManager.getIterator();
             while (agregatorIterator.hasNext()) {
                 var dataAgregator = agregatorIterator.next();
-                var agregator = new Agregator(this.options, dataAgregator);
+                var agregatorView = new AgregatorView(this.options, dataAgregator);
 
-                this.appendJquery(agregator);
-                this.containerArray.push(agregator);
+                this.appendJquery(agregatorView);
+                this.containerArray.push(agregatorView);
             }
         },
 
@@ -756,9 +756,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * Agregator class
+     * AgregatorView class
      */
-    function Agregator(options, dataAgregator) {
+    function AgregatorView(options, dataAgregator) {
         this.options = options;
         this.dataAgregator = dataAgregator;
 
@@ -771,9 +771,9 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    Agregator.prototype = Object.create(JQueryWrapper.prototype);
+    AgregatorView.prototype = Object.create(JQueryWrapper.prototype);
 
-    $.extend(Agregator.prototype, {
+    $.extend(AgregatorView.prototype, {
         _init: function() {
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
@@ -799,10 +799,10 @@ boundary: {left : object/string right: object/string}
             while (rowIterator.hasNext()) {
                 var dataRow = rowIterator.next();
 
-                var row = new Container(this.options, dataRow);
+                var containerView = new ContainerView(this.options, dataRow);
 
-                this.appendJquery(row);
-                this.containerArray.push(row);
+                this.appendJquery(containerView);
+                this.containerArray.push(containerView);
             }
         },
         removeContent: function() {
@@ -816,9 +816,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * Container class
+     * ContainerView class
      */
-    function Container(options, rowModel) {
+    function ContainerView(options, rowModel) {
         this.options = options;
         this.rowModel = rowModel;
         this.rowModel.addObserver(this);
@@ -828,9 +828,9 @@ boundary: {left : object/string right: object/string}
         this.blockArray = [];
         this._init();
     }
-    Container.prototype = Object.create(JQueryWrapper.prototype);
+    ContainerView.prototype = Object.create(JQueryWrapper.prototype);
 
-    $.extend(Container.prototype, {
+    $.extend(ContainerView.prototype, {
         _init: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
