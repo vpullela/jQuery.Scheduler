@@ -72,10 +72,10 @@ boundary: {left : object/string right: object/string}
         options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd";
         options.expandBodrer  = options.expandBorder  && true;         // false
         // calculabe options
-        options.containerWidth = function () { return options.width - options.vtHeaderWidth - 2 };
+        options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
         // set default baundaries
-        var minDays = Math.floor(options.containerWidth()/options.cellWidth);
+        var minDays = Math.floor(options.rowWidth()/options.cellWidth);
         var left = new Date();
         var right = left.clone().addDays(minDays);
         if (options.boundary && options.boudary.left) {
@@ -108,10 +108,10 @@ boundary: {left : object/string right: object/string}
             this.element.css("width", this.options.width);
 
             this.vtHeader = new VtHeaderView(this.options, this.dataManager);
-            this.slideContainerView = new SlideContainerView(this.options, this.dataManager);
+            this.slideView = new SlideView(this.options, this.dataManager);
 
             this.appendJquery(this.vtHeader);
-            this.appendJquery(this.slideContainerView);
+            this.appendJquery(this.slideView);
 
             this.applyLastClass();
         },
@@ -122,9 +122,9 @@ boundary: {left : object/string right: object/string}
                 this.vtHeader.destroyJquery();
             }
 
-            if (this.slideContainerView) {
-                this.slideContainerView.removeContent();
-                this.slideContainerView.destroyJquery();
+            if (this.slideView) {
+                this.slideView.removeContent();
+                this.slideView.destroyJquery();
             }
         },
 
@@ -151,18 +151,18 @@ boundary: {left : object/string right: object/string}
             }
 
             this.options.cellWidth--;
-            this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
+            this.options.boundary.setMinDays(Math.floor(this.options.rowWidth()/this.options.cellWidth));
 
-            this.slideContainerView.render();
+            this.slideView.render();
 
             this.widget._trigger("onclickonzoomout", event, {test: 1});
         },
 
         onClickOnZoomIn: function() {
             this.options.cellWidth++;
-            this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
+            this.options.boundary.setMinDays(Math.floor(this.options.rowWidth()/this.options.cellWidth));
 
-            this.slideContainerView.render();
+            this.slideView.render();
         },
 
         getData: function() {
@@ -272,9 +272,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     *  SlideContainerView Class
+     *  SlideView Class
      */
-    function SlideContainerView(options, dataManager) {
+    function SlideView(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
 
@@ -282,14 +282,14 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    SlideContainerView.prototype = Object.create(AbstractView.prototype);
+    SlideView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(SlideContainerView.prototype, {
+    $.extend(SlideView.prototype, {
         _init: function() {
             var slideContainer = $("<div>", {
-                "class": "planner-slide-container",
+                "class": "planner-slide",
                 "css": {
-                    "width": this.options.containerWidth() + "px"
+                    "width": this.options.rowWidth() + "px"
                 }
             });
 
@@ -504,8 +504,10 @@ boundary: {left : object/string right: object/string}
         this.options = options;
         this.dataManager = dataManager;
         this.hzHeader = hzHeader;
+       
         this.cellWidth = this.options.cellWidth;
-        this.containerArray = [];
+        this.contentArray = [];
+       
         this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
@@ -544,17 +546,17 @@ boundary: {left : object/string right: object/string}
                 var agregatorView = new AgregatorView(this.options, dataAgregator);
 
                 this.appendJquery(agregatorView);
-                this.containerArray.push(agregatorView);
+                this.contentArray.push(agregatorView);
             }
         },
 
         removeContent: function() {
-            $(this.containerArray).each(function() {
+            $(this.contentArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
             });
 
-            this.containerArray = [];
+            this.contentArray = [];
         },
 
         /** Event Handlers */
@@ -569,7 +571,7 @@ boundary: {left : object/string right: object/string}
                 "click",
                 $.proxy(this.onClickOnBlock, this));
 
-            this.getJquery().delegate("div.planner-block-container",
+            this.getJquery().delegate("div.planner-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
         },
@@ -717,6 +719,7 @@ boundary: {left : object/string right: object/string}
             e.stopPropagation();
 
             var ui = $(e.currentTarget);
+            console.log(ui.data("position"));
             this.selectedBlocks.addBlock(ui);
         },
         onClickOnContainer: function(e) {
@@ -731,6 +734,10 @@ boundary: {left : object/string right: object/string}
             };
 
             this.dataManager.addBlock(position, newBlockData);
+        },
+
+        getBlockView: function(position) {
+
         },
 
         // help functions
@@ -838,17 +845,17 @@ boundary: {left : object/string right: object/string}
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
-            var container = $("<div>", {
-                "class": "planner-block-container",
+            var row = $("<div>", {
+                "class": "planner-row",
                 "css" : {
                     "height": cellHeight + "px",
                     "width": (this.numberOfDays+1) * cellWidth + "px"
                 }
             });
             // TODO:: data method
-            container.data("position", this.rowModel.getPosition());
+            row.data("position", this.rowModel.getPosition());
 
-            this.setJquery(container);
+            this.setJquery(row);
             this.startObserveModel();
 
             this.render();
