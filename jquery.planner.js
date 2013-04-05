@@ -20,23 +20,23 @@ boundary: {left : object/string right: object/string}
         chart: undefined,
 
         _create: function() {
-            this.chart = new Chart(this.options, this.element, this);
+            this.chartView = new ChartView(this.options, this.element, this);
         },
 
         setData: function(data) {
-            this.chart.setData(data);
+            this.chartView.setData(data);
         },
 
         getData: function() {
-            return this.chart.getData();
+            return this.chartView.getData();
         },
 
         _setOption: function (name, value) {
             if (name === "width") {
-                this.chart.setWidth(value);
+                this.chartView.setWidth(value);
             }
             if (name === "boundary") {
-                this.chart.setBoundaries(value);
+                this.chartView.setBoundaries(value);
                 return;
             }
 
@@ -48,9 +48,9 @@ boundary: {left : object/string right: object/string}
 * Components
 *=============================================================================*/
     /**
-     * Chart class
+     * ChartView class
      */
-    function Chart(options, element, widget) {
+    function ChartView(options, element, widget) {
         this.element = element;
         /* TODO: handle widget parameter passing */
         this.widget = widget;
@@ -84,16 +84,16 @@ boundary: {left : object/string right: object/string}
         if (options.boundary && options.boudary.right) {
             right = DateUtils.convertToDate(options.boundary.right, this.options.dateFormat);
         }
-        options.boundary = new DataBoundary(left, right, minDays);
+        options.boundary = new Boundary(left, right, minDays);
 
         this.options = options;
-        this.dataManager = new DataManager(options);
+        this.dataManager = new WorkbenchModel(options);
 
         this._init();
     }
-    Chart.prototype = Object.create(JQueryWrapper.prototype);
+    ChartView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(Chart.prototype, {
+    $.extend(ChartView.prototype, {
         _init: function() {
             this.element.addClass("planner");
             this.setJquery(this.element);
@@ -107,11 +107,11 @@ boundary: {left : object/string right: object/string}
             this.removeContent();
             this.element.css("width", this.options.width);
 
-            this.vtHeader = new VtHeader(this.options, this.dataManager);
-            this.slideContainer = new SlideContainer(this.options, this.dataManager);
+            this.vtHeader = new VtHeaderView(this.options, this.dataManager);
+            this.slideContainerView = new SlideContainerView(this.options, this.dataManager);
 
             this.appendJquery(this.vtHeader);
-            this.appendJquery(this.slideContainer);
+            this.appendJquery(this.slideContainerView);
 
             this.applyLastClass();
         },
@@ -122,9 +122,9 @@ boundary: {left : object/string right: object/string}
                 this.vtHeader.destroyJquery();
             }
 
-            if (this.slideContainer) {
-                this.slideContainer.removeContent();
-                this.slideContainer.destroyJquery();
+            if (this.slideContainerView) {
+                this.slideContainerView.removeContent();
+                this.slideContainerView.destroyJquery();
             }
         },
 
@@ -153,7 +153,7 @@ boundary: {left : object/string right: object/string}
             this.options.cellWidth--;
             this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
 
-            this.slideContainer.render();
+            this.slideContainerView.render();
 
             this.widget._trigger("onclickonzoomout", event, {test: 1});
         },
@@ -162,7 +162,7 @@ boundary: {left : object/string right: object/string}
             this.options.cellWidth++;
             this.options.boundary.setMinDays(Math.floor(this.options.containerWidth()/this.options.cellWidth));
 
-            this.slideContainer.render();
+            this.slideContainerView.render();
         },
 
         getData: function() {
@@ -191,17 +191,17 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * VtHeader class
+     * VtHeaderView class
      */
-    function VtHeader(options, dataManager) {
+    function VtHeaderView(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
 
         this._init();
     }
-    VtHeader.prototype = Object.create(JQueryWrapper.prototype);
+    VtHeaderView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(VtHeader.prototype, {
+    $.extend(VtHeaderView.prototype, {
         _init: function (options) {
             var headerDiv = $("<div>", {
                 "class": "planner-vtheader",
@@ -218,7 +218,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var cellHeight = this.options.cellHeight;
 
-            var menu = new Menu(this.options, this.dataManager);
+            var menu = new MenuView(this.options, this.dataManager);
             this.appendJquery(menu);
 
             var agregatorIterator = this.dataManager.getIterator();
@@ -242,17 +242,17 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * Menu Class
+     * MenuView Class
      */
-    function Menu(options, dataManager) {
+    function MenuView(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
 
         this._init();
     }
-    Menu.prototype = Object.create(JQueryWrapper.prototype);
+    MenuView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(Menu.prototype, {
+    $.extend(MenuView.prototype, {
         _init: function () {
             var menuDiv = $("<div>", {
                 "class": "planner-menu planner-nonselectable",
@@ -272,9 +272,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     *  SlideContainer Class
+     *  SlideContainerView Class
      */
-    function SlideContainer(options, dataManager) {
+    function SlideContainerView(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
 
@@ -282,9 +282,9 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    SlideContainer.prototype = Object.create(JQueryWrapper.prototype);
+    SlideContainerView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(SlideContainer.prototype, {
+    $.extend(SlideContainerView.prototype, {
         _init: function() {
             var slideContainer = $("<div>", {
                 "class": "planner-slide-container",
@@ -301,7 +301,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var hzHeader = new HzHeader(this.options, this.dataManager);
+            var hzHeader = new HzHeaderView(this.options, this.dataManager);
             var workbenchView = new WorkbenchView(this.options, this.dataManager, hzHeader);
 
             var numberOfDays = this.options.boundary.getNumberOfDays();
@@ -355,9 +355,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     *  HzHeader class
+     *  HzHeaderView class
      */
-    function HzHeader(options, dataManager) {
+    function HzHeaderView(options, dataManager) {
         this.options = options;
         this.dataManager = dataManager;
         this.daysArray = [];
@@ -365,9 +365,9 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    HzHeader.prototype = Object.create(JQueryWrapper.prototype);
+    HzHeaderView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(HzHeader.prototype, {
+    $.extend(HzHeaderView.prototype, {
         /* TODO: move to configuration part */
         _monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 
@@ -387,7 +387,7 @@ boundary: {left : object/string right: object/string}
                         "css": { "width": w + "px" }
                     }).append(this._monthNames[m] + "/" + y));
                     for (var d in dates[y][m]) {
-                        var day = new HzHeaderDay(this.options, dates[y][m][d]);
+                        var day = new HzHeaderDayView(this.options, dates[y][m][d]);
                         this.daysArray.push(day);
                         this.appendJquery(day, daysDiv);
                     }
@@ -468,15 +468,15 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-    * HzHeaderDay Class
+    * HzHeaderDayView Class
     */
-    function HzHeaderDay(options, date) {
+    function HzHeaderDayView(options, date) {
         this.options = options;
         this._init(date);
     }
-    HzHeaderDay.prototype = Object.create(JQueryWrapper.prototype);
+    HzHeaderDayView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(HzHeaderDay.prototype, {
+    $.extend(HzHeaderDayView.prototype, {
         _init: function(date) {
             this.date = date;
             this.cellWidth = this.options.cellWidth;
@@ -513,7 +513,7 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    WorkbenchView.prototype = Object.create(JQueryWrapper.prototype);
+    WorkbenchView.prototype = Object.create(AbstractView.prototype);
 
     $.extend(WorkbenchView.prototype, {
         _init: function() {
@@ -771,7 +771,7 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    AgregatorView.prototype = Object.create(JQueryWrapper.prototype);
+    AgregatorView.prototype = Object.create(AbstractView.prototype);
 
     $.extend(AgregatorView.prototype, {
         _init: function() {
@@ -799,16 +799,17 @@ boundary: {left : object/string right: object/string}
             while (rowIterator.hasNext()) {
                 var dataRow = rowIterator.next();
 
-                var containerView = new ContainerView(this.options, dataRow);
+                var rowView = new RowView(this.options, dataRow);
 
-                this.appendJquery(containerView);
-                this.containerArray.push(containerView);
+                this.appendJquery(rowView);
+                this.containerArray.push(rowView);
             }
         },
         removeContent: function() {
             $(this.containerArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
+                this.rowModel.removeObserver(this);
             });
 
             this.containerArray = [];
@@ -816,9 +817,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * ContainerView class
+     * RowView class
      */
-    function ContainerView(options, rowModel) {
+    function RowView(options, rowModel) {
         this.options = options;
         this.rowModel = rowModel;
         this.rowModel.addObserver(this);
@@ -828,9 +829,9 @@ boundary: {left : object/string right: object/string}
         this.blockArray = [];
         this._init();
     }
-    ContainerView.prototype = Object.create(JQueryWrapper.prototype);
+    RowView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(ContainerView.prototype, {
+    $.extend(RowView.prototype, {
         _init: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
@@ -856,7 +857,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.rowModel.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                var block = new Block(this.options, blockModel, this.order);
+                var block = new BlockView(this.options, blockModel, this.order);
                 this.blockArray.push(block);
             }
 
@@ -878,18 +879,18 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * Block class
+     * BlockView class
      */
-    function Block(options, blockModel, rowNum) {
+    function BlockView(options, blockModel, rowNum) {
         this.options = options;
         this.rowNum = rowNum;
         this.blockModel = blockModel;
 
         this._init();
     }
-    Block.prototype = Object.create(JQueryWrapper.prototype);
+    BlockView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(Block.prototype, {
+    $.extend(BlockView.prototype, {
         _init: function() {
             this.cellWidth = this.options.cellWidth;
 
@@ -924,347 +925,20 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * ArrayIterator class
+     * WorkbenchModel class
      */
-    function ArrayIterator(array) {
-        this.array = array;
-        this.index = 0;
-    }
-    $.extend(ArrayIterator.prototype, {
-        hasNext: function() {
-            return this.index < this.array.length;
-        },
-        next: function() {
-            return this.array[this.index++];
-        },
-    });
-
-    /**
-     * SelectedBlocks class
-     */
-    function SelectedBlocks() {
-        this.selectedBlocks = [];
-    }
-    $.extend(SelectedBlocks.prototype, {
-        addBlock: function(block) {
-            if (this.isSelected(block)) {
-                return;
-            }
-
-            block.addClass("selected");
-            this.selectedBlocks.push(block);
-        },
-
-        isSelected: function(block) {
-            var blockIterator = this.getIterator();
-            while (blockIterator.hasNext()) {
-                selectedBlock = blockIterator.next();
-
-                if (selectedBlock.data("position") == block.data("position")) {
-                    return true;
-                }
-            }
-            return false;
-        },
-
-        empty: function() {
-            this.selectedBlocks.length = 0;
-        },
-
-        getIterator: function() {
-            return new ArrayIterator(this.selectedBlocks);
-        },
-    });
-
-    /**
-     * DataBlock class
-     */
-    function DataBlock(parent, blockNum, blockData, previousBlockEnd) {
-        this.parent = parent;
-        this.order = blockNum;
-        this.blockData = blockData;
-        /* first day in row if not set */
-        this.previousBlockEnd = previousBlockEnd || this.parent.parent.options.boundary.getLeft();
-    }
-    $.extend(DataBlock.prototype, {
-        start: function() {
-            return this.blockData.start;
-        },
-        end: function() {
-            return this.blockData.end;
-        },
-        color: function() {
-            return this.blockData.color;
-        },
-        getBlockData: function() {
-            return this.blockData;
-        },
-        setBlockData: function(blockData) {
-            this.blockData = blockData;
-        },
-        getPreviousBlockEnd: function() {
-            return this.previousBlockEnd;
-        },
-        getPosition: function() {
-            return {
-                block: this.order,
-                row: this.parent.order,
-                agregator: this.parent.parent.order
-            };
-        }
-    });
-
-    /**
-     *  DataRow class
-     */
-    function DataRow(parent, rowNum, metadata, blockList) {
-        this.parent = parent;
-        this.order = rowNum;
-        this.metadata = metadata;
-        this.blockList = [];
-
-        this.observerList = [];
-        this.setBlockList(blockList);
-    }
-    $.extend(DataRow.prototype, {
-        setBlockList: function(blockList) {
-            this.blockList = [];
-            var previousBlockEnd = this.parent.options.boundary.getLeft(); // first day in row
-            for (blockNum in blockList) {
-                var block = new DataBlock(this, blockNum, blockList[blockNum], previousBlockEnd);
-                this.blockList.push(block);
-                previousBlockEnd = block.end().clone().addDays(1);
-            }
-        },
-        getBlockList: function() {
-            return this.blockList;
-        },
-        getBlockListJson: function() {
-            var result = [];
-            var blockIterator = this.getIterator();
-            while (blockIterator.hasNext()) {
-                var block = blockIterator.next();
-                result.push(block.getBlockData());
-            }
-            return result;
-        },
-
-        getBlock: function(blockNum) {
-            var blockIterator = this.getIterator();
-            while (blockIterator.hasNext()) {
-                var block = blockIterator.next();
-                if (block.order == blockNum) {
-                    return block;
-                }
-            }
-            return false;
-        },
-
-        addObserver: function(observer) {
-            this.observerList.push(observer);
-        },
-
-        nofityObservers: function() {
-            observerIterator = new ArrayIterator(this.observerList);
-            while (observerIterator.hasNext()) {
-                var observer = observerIterator.next();
-                observer.update();
-            }
-        },
-
-        getPosition: function() {
-            return {
-                row: this.order,
-                agregator: this.parent.order
-            };
-        },
-
-        getIterator: function() {
-            return new ArrayIterator(this.blockList);
-        },
-    });
-
-    /**
-     * DataAgregator class
-     */
-    function DataAgregator(options, order, metadata, data) {
-        this.options = options;
-        this.order = order;
-
-        this.rowList = [];
-
-        this.minDate = undefined;
-        this.maxDate = undefined;
-
-        this.metadata = metadata
-        this.setData(data);
-    }
-    $.extend(DataAgregator.prototype, {
-        setAgregate: function(row) {
-            row = this.prepareRowData(row, true);
-            for (rowNum in this.rowList) {
-                this.rowList[rowNum] = row;
-            }
-        },
-        getAgregate: function() {
-            var result = [];
-
-            for (rowNum in this.rowList) {
-                row = this.rowList[rowNum];
-                result = result.concat(row);
-            }
-
-            return this.prepareRowData(result);
-        },
-
-        setData: function(data) {
-            for (rowNum in data) {
-                var row = new DataRow(this, rowNum, data[rowNum].metadata, this.prepareRowData(data[rowNum].data));
-                this.rowList.push(row);
-            }
-        },
-        getData: function() {
-            return this.rowList;
-        },
-        getRow: function(order) {
-            return this.rowList[order];
-        },
-
-
-        getMinDate: function() {
-            return this.minDate;
-        },
-        getMaxDate: function() {
-            return this.maxDate;
-        },
-        getName: function() {
-            return this.metadata.name;
-        },
-        getNumberOfRows: function() {
-            return this.rowList.length;
-        },
-
-        // helper functions
-        prepareRowData: function(rowData) {
-            var correctArr = [];
-            /* TODO: ? move to separete function */
-            for(var i=0; i< rowData.length; i++) {
-                /* skip if period is not set */
-                if (!rowData[i].start || !rowData[i].end) {
-                    continue;
-                }
-
-                /* convert if dates in string */
-                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
-                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
-
-                /* remove intervals with switched date */
-                if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
-                    continue;
-                }
-
-                /* fit to boundary */
-                if (!this.options.expandBorder) {
-
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
-                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
-                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
-                        rowData[i].start = this.options.boundary.getLeft();
-                    }
-                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        rowData[i].end = this.options.boundary.getRight();
-                    }
-                }
-
-                /* calculate max/min dates  */
-                if (!this.minDate || this.minDate.compareTo(rowData[i].start) >= 0) {
-                    this.minDate = rowData[i].start;
-                }
-                if (!this.maxDate || this.maxDate.compareTo(rowData[i].end) <= 0) {
-                    this.maxDate = rowData[i].end;
-                }
-
-                correctArr.push(rowData[i]);
-            }
-
-            /* change bundaries */
-            if (this.options.expandBorder) {
-                if (this.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
-                    this.options.boundary.setLeft(this.minDate);
-                }
-                if (this.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
-                    this.options.boundary.setRight(this.maxDate);
-                }
-            }
-
-            if (correctArr.length < 2) {
-                return correctArr;
-            }
-
-            /* sort by start date */
-            correctArr.sort(function(leftBlock, rightBlock) {
-                var leftStartDate = leftBlock.start.getTime();
-                var rightStartDate = rightBlock.start.getTime();
-                if (leftStartDate < rightStartDate) {
-                    return -1;
-                } else if (leftStartDate > rightStartDate) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            });
-
-            /* merge crossed intervals (TODO: can be optimized) */
-            var currentBlock = correctArr[0];
-            var mergedArr = [];
-            for (var i=1; i < correctArr.length; i++) {
-                var nextBlock = correctArr[i];
-                var currentStartDate = currentBlock.start;
-                var currentEndDate = currentBlock.end;
-                var nextStartDate = nextBlock.start;
-                var nextEndDate = nextBlock.end;
-
-                if (currentEndDate.compareTo(nextEndDate) >= 0) {
-                    continue;
-                }
-                if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
-                    currentBlock.end = nextBlock.end;
-                    continue;
-                }
-                mergedArr.push(currentBlock);
-                currentBlock = nextBlock;
-            }
-            mergedArr.push(currentBlock);
-
-            return mergedArr;
-        },
-        getIterator: function() {
-            return new ArrayIterator(this.rowList);
-        }
-    });
-
-
-    /**
-     * DataManager class
-     */
-    function DataManager(options) {
+    function WorkbenchModel(options) {
         this.options = options;
         this.data = [];
     }
 
-    $.extend(DataManager.prototype, {
+    $.extend(WorkbenchModel.prototype, {
         //table
         setData: function(data) {
             this.data = [];
 
             for (var rowNum in data) {
-                var agregator = new DataAgregator(this.options, rowNum, data[rowNum].metadata, data[rowNum].data);
+                var agregator = new AgregatorModel(this.options, rowNum, data[rowNum].metadata, data[rowNum].data);
                 this.data.push(agregator);
             }
         },
@@ -1433,9 +1107,342 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * DataBoundary class
+     * AgregatorModel class
      */
-    function DataBoundary(left, right, minDays) {
+    function AgregatorModel(options, order, metadata, data) {
+        this.options = options;
+        this.order = order;
+
+        this.rowList = [];
+
+        this.minDate = undefined;
+        this.maxDate = undefined;
+
+        this.metadata = metadata
+        this.setData(data);
+    }
+    $.extend(AgregatorModel.prototype, {
+        setAgregate: function(row) {
+            row = this.prepareRowData(row, true);
+            for (rowNum in this.rowList) {
+                this.rowList[rowNum] = row;
+            }
+        },
+        getAgregate: function() {
+            var result = [];
+
+            for (rowNum in this.rowList) {
+                row = this.rowList[rowNum];
+                result = result.concat(row);
+            }
+
+            return this.prepareRowData(result);
+        },
+
+        setData: function(data) {
+            for (rowNum in data) {
+                var row = new RowModel(this, rowNum, data[rowNum].metadata, this.prepareRowData(data[rowNum].data));
+                this.rowList.push(row);
+            }
+        },
+        getData: function() {
+            return this.rowList;
+        },
+        getRow: function(order) {
+            return this.rowList[order];
+        },
+
+
+        getMinDate: function() {
+            return this.minDate;
+        },
+        getMaxDate: function() {
+            return this.maxDate;
+        },
+        getName: function() {
+            return this.metadata.name;
+        },
+        getNumberOfRows: function() {
+            return this.rowList.length;
+        },
+
+        // helper functions
+        prepareRowData: function(rowData) {
+            var correctArr = [];
+            /* TODO: ? move to separete function */
+            for(var i=0; i< rowData.length; i++) {
+                /* skip if period is not set */
+                if (!rowData[i].start || !rowData[i].end) {
+                    continue;
+                }
+
+                /* convert if dates in string */
+                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
+                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
+
+                /* remove intervals with switched date */
+                if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
+                    continue;
+                }
+
+                /* fit to boundary */
+                if (!this.options.expandBorder) {
+
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
+                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
+                        continue;
+                    }
+                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
+                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
+                        continue;
+                    }
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
+                        rowData[i].start = this.options.boundary.getLeft();
+                    }
+                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
+                        rowData[i].end = this.options.boundary.getRight();
+                    }
+                }
+
+                /* calculate max/min dates  */
+                if (!this.minDate || this.minDate.compareTo(rowData[i].start) >= 0) {
+                    this.minDate = rowData[i].start;
+                }
+                if (!this.maxDate || this.maxDate.compareTo(rowData[i].end) <= 0) {
+                    this.maxDate = rowData[i].end;
+                }
+
+                correctArr.push(rowData[i]);
+            }
+
+            /* change bundaries */
+            if (this.options.expandBorder) {
+                if (this.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
+                    this.options.boundary.setLeft(this.minDate);
+                }
+                if (this.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
+                    this.options.boundary.setRight(this.maxDate);
+                }
+            }
+
+            if (correctArr.length < 2) {
+                return correctArr;
+            }
+
+            /* sort by start date */
+            correctArr.sort(function(leftBlock, rightBlock) {
+                var leftStartDate = leftBlock.start.getTime();
+                var rightStartDate = rightBlock.start.getTime();
+                if (leftStartDate < rightStartDate) {
+                    return -1;
+                } else if (leftStartDate > rightStartDate) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+
+            /* merge crossed intervals (TODO: can be optimized) */
+            var currentBlock = correctArr[0];
+            var mergedArr = [];
+            for (var i=1; i < correctArr.length; i++) {
+                var nextBlock = correctArr[i];
+                var currentStartDate = currentBlock.start;
+                var currentEndDate = currentBlock.end;
+                var nextStartDate = nextBlock.start;
+                var nextEndDate = nextBlock.end;
+
+                if (currentEndDate.compareTo(nextEndDate) >= 0) {
+                    continue;
+                }
+                if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
+                    currentBlock.end = nextBlock.end;
+                    continue;
+                }
+                mergedArr.push(currentBlock);
+                currentBlock = nextBlock;
+            }
+            mergedArr.push(currentBlock);
+
+            return mergedArr;
+        },
+        getIterator: function() {
+            return new ArrayIterator(this.rowList);
+        }
+    });
+
+    /**
+     *  RowModel class
+     */
+    function RowModel(parent, rowNum, metadata, blockList) {
+        this.parent = parent;
+        this.order = rowNum;
+        this.metadata = metadata;
+        this.blockList = [];
+
+        this.observerList = [];
+        this.setBlockList(blockList);
+    }
+    $.extend(RowModel.prototype, {
+        setBlockList: function(blockList) {
+            this.blockList = [];
+            var previousBlockEnd = this.parent.options.boundary.getLeft(); // first day in row
+            for (blockNum in blockList) {
+                var block = new BlockModel(this, blockNum, blockList[blockNum], previousBlockEnd);
+                this.blockList.push(block);
+                previousBlockEnd = block.end().clone().addDays(1);
+            }
+        },
+        getBlockList: function() {
+            return this.blockList;
+        },
+        getBlockListJson: function() {
+            var result = [];
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                result.push(block.getBlockData());
+            }
+            return result;
+        },
+
+        getBlock: function(blockNum) {
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                if (block.order == blockNum) {
+                    return block;
+                }
+            }
+            return false;
+        },
+
+        addObserver: function(observer) {
+            return this.observerList.push(observer);
+        },
+        
+        removeObserver: function(observer) {
+            for (var index in this.observerList) {
+                if (observer == this.observerList[index]) {
+                    this.observerList.splice(index, 1);
+                }
+            } 
+        },
+
+        nofityObservers: function() {
+            observerIterator = new ArrayIterator(this.observerList);
+            while (observerIterator.hasNext()) {
+                var observer = observerIterator.next();
+                observer.update();
+            }
+        },
+
+        getPosition: function() {
+            return {
+                row: this.order,
+                agregator: this.parent.order
+            };
+        },
+
+        getIterator: function() {
+            return new ArrayIterator(this.blockList);
+        },
+    });
+
+    /**
+     * BlockModel class
+     */
+    function BlockModel(parent, blockNum, blockData, previousBlockEnd) {
+        this.parent = parent;
+        this.order = blockNum;
+        this.blockData = blockData;
+        /* first day in row if not set */
+        this.previousBlockEnd = previousBlockEnd || this.parent.parent.options.boundary.getLeft();
+    }
+    $.extend(BlockModel.prototype, {
+        start: function() {
+            return this.blockData.start;
+        },
+        end: function() {
+            return this.blockData.end;
+        },
+        color: function() {
+            return this.blockData.color;
+        },
+        getBlockData: function() {
+            return this.blockData;
+        },
+        setBlockData: function(blockData) {
+            this.blockData = blockData;
+        },
+        getPreviousBlockEnd: function() {
+            return this.previousBlockEnd;
+        },
+        getPosition: function() {
+            return {
+                block: this.order,
+                row: this.parent.order,
+                agregator: this.parent.parent.order
+            };
+        }
+    });
+
+    /**
+     * ArrayIterator class
+     */
+    function ArrayIterator(array) {
+        this.array = array;
+        this.index = 0;
+    }
+    $.extend(ArrayIterator.prototype, {
+        hasNext: function() {
+            return this.index < this.array.length;
+        },
+        next: function() {
+            return this.array[this.index++];
+        },
+    });
+
+    /**
+     * SelectedBlocks class
+     */
+    function SelectedBlocks() {
+        this.selectedBlocks = [];
+    }
+    $.extend(SelectedBlocks.prototype, {
+        addBlock: function(block) {
+            if (this.isSelected(block)) {
+                return;
+            }
+
+            block.addClass("selected");
+            this.selectedBlocks.push(block);
+        },
+
+        isSelected: function(block) {
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                selectedBlock = blockIterator.next();
+
+                if (selectedBlock.data("position") == block.data("position")) {
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        empty: function() {
+            this.selectedBlocks.length = 0;
+        },
+
+        getIterator: function() {
+            return new ArrayIterator(this.selectedBlocks);
+        },
+    });
+    /**
+     * Boundary class
+     */
+    function Boundary(left, right, minDays) {
         this.left = new Date();
         this.right = new Date();
         this.minDays = 0;
@@ -1446,7 +1453,7 @@ boundary: {left : object/string right: object/string}
         this.setMinDays(minDays);
     }
 
-    $.extend(DataBoundary.prototype, {
+    $.extend(Boundary.prototype, {
         setLeft: function(left) {
             this.left = left;
             this.calculateNumberOfDays();
@@ -1486,13 +1493,13 @@ boundary: {left : object/string right: object/string}
 * Libraries
 *=============================================================================*/
     /**
-    * jQuery Wrapper
+    * AbstractView
     */
-    function JQueryWrapper () {
+    function AbstractView () {
         this.jQueryElement = $("<div>");
     }
 
-    $.extend(JQueryWrapper.prototype, {
+    $.extend(AbstractView.prototype, {
         /* Wrapper */
 
         getCssProperty: function(fromClass, propertyName) {
