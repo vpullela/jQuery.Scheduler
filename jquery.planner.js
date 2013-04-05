@@ -504,10 +504,10 @@ boundary: {left : object/string right: object/string}
         this.options = options;
         this.dataManager = dataManager;
         this.hzHeader = hzHeader;
-       
+
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
-       
+
         this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
@@ -717,10 +717,9 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
-
-            var ui = $(e.currentTarget);
-            console.log(ui.data("position"));
-            this.selectedBlocks.addBlock(ui);
+            var blockView = this.getBlockView($(e.currentTarget).data("position"));
+            /* TODO:: move selectedBlocks from WorkbenchView */
+            this.selectedBlocks.addBlock(blockView.getJquery());
         },
         onClickOnContainer: function(e) {
             var element = $(e.currentTarget)
@@ -737,7 +736,17 @@ boundary: {left : object/string right: object/string}
         },
 
         getBlockView: function(position) {
+            var agregatorView = this.contentArray[position.agregator];
+            var rowView = undefined;
 
+            /* TODO:: ?search by Model Order and move agregatedRowView in content array? */
+            if (position.row == -1) {
+                rowView = agregatorView.agregatedRowView;
+            } else {
+                rowView = agregatorView.contentArray[position.row];
+            }
+            var blockView = rowView.contentArray[position.block];
+            return blockView;
         },
 
         // help functions
@@ -804,7 +813,6 @@ boundary: {left : object/string right: object/string}
 
             this.agregatedRowView = new RowView(this.options, this.agregatorModel.getAgregatedRow());
             this.appendJquery(this.agregatedRowView);
-            this.contentArray.push(this.agregatedRowView);
 
             var rowIterator = this.agregatorModel.getIterator();
             while (rowIterator.hasNext()) {
@@ -816,11 +824,18 @@ boundary: {left : object/string right: object/string}
             }
         },
         removeContent: function() {
+            /* TODO:: removeContent refactoring */
             $(this.contentArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
                 this.stopObserveModel();
             });
+
+            if (this.agregatedRowView) {
+                this.agregatedRowView.removeContent();
+                this.agregatedRowView.destroyJquery();
+                this.agregatedRowView.stopObserveModel();
+            }
 
             this.contentArray = [];
         },
@@ -835,7 +850,7 @@ boundary: {left : object/string right: object/string}
 
         this.numberOfDays = this.options.boundary.getNumberOfDays(true);
 
-        this.blockArray = [];
+        this.contentArray = [];
         this._init();
     }
     RowView.prototype = Object.create(AbstractView.prototype);
@@ -867,20 +882,20 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.rowModel.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                var block = new BlockView(this.options, blockModel, this.order);
-                this.blockArray.push(block);
+                var block = new BlockView(this.options, blockModel);
+                this.contentArray.push(block);
             }
 
-            for (var i = 0; i < this.blockArray.length; i++) {
-                this.appendJquery(this.blockArray[i]);
+            for (var i = 0; i < this.contentArray.length; i++) {
+                this.appendJquery(this.contentArray[i]);
             }
         },
 
         removeContent: function() {
-            $(this.blockArray).each(function() {
+            $(this.contentArray).each(function() {
                 this.destroyJquery()
             });
-            this.blockArray = [];
+            this.contentArray = [];
         },
 
         startObserveModel: function() {
@@ -888,7 +903,7 @@ boundary: {left : object/string right: object/string}
         },
         stopObserveModel: function() {
             this.rowModel.removeObserver(this);
-        }, 
+        },
 
         update: function() {
             this.render();
@@ -898,9 +913,8 @@ boundary: {left : object/string right: object/string}
     /**
      * BlockView class
      */
-    function BlockView(options, blockModel, rowNum) {
+    function BlockView(options, blockModel) {
         this.options = options;
-        this.rowNum = rowNum;
         this.blockModel = blockModel;
 
         this._init();
@@ -1024,7 +1038,7 @@ boundary: {left : object/string right: object/string}
             blockList.push(blockData);
             row.setBlockList(agregator.prepareRowData(blockList));
             row.notifyObservers();
-            
+
             agregator.updateAgregatedRow();
         },
         deleteBlockList: function(rowNumber, blockNumberList) {
@@ -1105,7 +1119,7 @@ boundary: {left : object/string right: object/string}
                 row.setBlockList(agregator.prepareRowData(blockList.row));
                 row.notifyObservers();
 
-                /*TODO:: remove agregator update dupliction */ 
+                /*TODO:: remove agregator update dupliction */
                 agregator.updateAgregatedRow();
             }
 
@@ -1345,13 +1359,13 @@ boundary: {left : object/string right: object/string}
         addObserver: function(observer) {
             return this.observerList.push(observer);
         },
-        
+
         removeObserver: function(observer) {
             for (var index in this.observerList) {
                 if (observer == this.observerList[index]) {
                     this.observerList.splice(index, 1);
                 }
-            } 
+            }
         },
 
         notifyObservers: function() {
