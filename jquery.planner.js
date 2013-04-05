@@ -758,12 +758,12 @@ boundary: {left : object/string right: object/string}
     /**
      * AgregatorView class
      */
-    function AgregatorView(options, dataAgregator) {
+    function AgregatorView(options, agregatorModel) {
         this.options = options;
-        this.dataAgregator = dataAgregator;
+        this.agregatorModel = agregatorModel;
 
         this.cellWidth = this.options.cellWidth;
-        this.containerArray = [];
+        this.contentArray = [];
         this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
@@ -795,24 +795,27 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var rowIterator = this.dataAgregator.getIterator();
-            while (rowIterator.hasNext()) {
-                var dataRow = rowIterator.next();
+            this.agregatedRowView = new RowView(this.options, this.agregatorModel.getAgregatedRow());
+            this.appendJquery(this.agregatedRowView);
+            this.contentArray.push(this.agregatedRowView);
 
-                var rowView = new RowView(this.options, dataRow);
+            var rowIterator = this.agregatorModel.getIterator();
+            while (rowIterator.hasNext()) {
+                var rowModel = rowIterator.next();
+                var rowView = new RowView(this.options, rowModel);
 
                 this.appendJquery(rowView);
-                this.containerArray.push(rowView);
+                this.contentArray.push(rowView);
             }
         },
         removeContent: function() {
-            $(this.containerArray).each(function() {
+            $(this.contentArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
-                this.rowModel.removeObserver(this);
+                this.stopObserveModel();
             });
 
-            this.containerArray = [];
+            this.contentArray = [];
         },
     });
 
@@ -822,7 +825,6 @@ boundary: {left : object/string right: object/string}
     function RowView(options, rowModel) {
         this.options = options;
         this.rowModel = rowModel;
-        this.rowModel.addObserver(this);
 
         this.numberOfDays = this.options.boundary.getNumberOfDays(true);
 
@@ -847,6 +849,7 @@ boundary: {left : object/string right: object/string}
             container.data("position", this.rowModel.getPosition());
 
             this.setJquery(container);
+            this.startObserveModel();
 
             this.render();
         },
@@ -872,6 +875,13 @@ boundary: {left : object/string right: object/string}
             });
             this.blockArray = [];
         },
+
+        startObserveModel: function() {
+            this.rowModel.addObserver(this);
+        },
+        stopObserveModel: function() {
+            this.rowModel.removeObserver(this);
+        }, 
 
         update: function() {
             this.render();
@@ -1006,7 +1016,9 @@ boundary: {left : object/string right: object/string}
 
             blockList.push(blockData);
             row.setBlockList(agregator.prepareRowData(blockList));
-            row.nofityObservers();
+            row.notifyObservers();
+            
+            agregator.updateAgregatedRow();
         },
         deleteBlockList: function(rowNumber, blockNumberList) {
             var rowData = this.data[rowNumber].getAgregate();
@@ -1076,6 +1088,7 @@ boundary: {left : object/string right: object/string}
             }
 
             var blockListIterator = blockListBuffer.getIterator();
+
             while (blockListIterator.hasNext()) {
                 blockList = blockListIterator.next();
 
@@ -1083,7 +1096,10 @@ boundary: {left : object/string right: object/string}
                 var row = agregator.getRow(blockList.key.row);
                 /*TODO:: prepareRowData replace*/
                 row.setBlockList(agregator.prepareRowData(blockList.row));
-                row.nofityObservers();
+                row.notifyObservers();
+
+                /*TODO:: remove agregator update dupliction */ 
+                agregator.updateAgregatedRow();
             }
 
             selectedBlocks.empty();
@@ -1114,6 +1130,7 @@ boundary: {left : object/string right: object/string}
         this.order = order;
 
         this.rowList = [];
+        this.agregatedRow = undefined;
 
         this.minDate = undefined;
         this.maxDate = undefined;
@@ -1122,28 +1139,30 @@ boundary: {left : object/string right: object/string}
         this.setData(data);
     }
     $.extend(AgregatorModel.prototype, {
-        setAgregate: function(row) {
-            row = this.prepareRowData(row, true);
-            for (rowNum in this.rowList) {
-                this.rowList[rowNum] = row;
-            }
+        getAgregatedRow: function() {
+            return this.agregatedRow;
         },
-        getAgregate: function() {
-            var result = [];
-
-            for (rowNum in this.rowList) {
-                row = this.rowList[rowNum];
-                result = result.concat(row);
+        updateAgregatedRow: function() {
+            var blockList = [];
+            var rowIterator = this.getIterator();
+            while (rowIterator.hasNext()) {
+                var rowModel = rowIterator.next();
+                blockList = blockList.concat(rowModel.getBlockListJson());
             }
 
-            return this.prepareRowData(result);
+            blockList = $.extend(true, [], blockList);
+            this.agregatedRow.setBlockList(this.prepareRowData(blockList));
+            this.agregatedRow.notifyObservers();
         },
 
         setData: function(data) {
+            var blockList = []
             for (rowNum in data) {
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, this.prepareRowData(data[rowNum].data));
                 this.rowList.push(row);
+                blockList = blockList.concat(data[rowNum].data);
             }
+            this.agregatedRow = new RowModel(this, -1, {}, this.prepareRowData(blockList));
         },
         getData: function() {
             return this.rowList;
@@ -1151,7 +1170,6 @@ boundary: {left : object/string right: object/string}
         getRow: function(order) {
             return this.rowList[order];
         },
-
 
         getMinDate: function() {
             return this.minDate;
@@ -1163,10 +1181,10 @@ boundary: {left : object/string right: object/string}
             return this.metadata.name;
         },
         getNumberOfRows: function() {
-            return this.rowList.length;
+            return this.rowList.length + 1;
         },
 
-        // helper functions
+        // TODO:: move to RowModel class
         prepareRowData: function(rowData) {
             var correctArr = [];
             /* TODO: ? move to separete function */
@@ -1329,7 +1347,7 @@ boundary: {left : object/string right: object/string}
             } 
         },
 
-        nofityObservers: function() {
+        notifyObservers: function() {
             observerIterator = new ArrayIterator(this.observerList);
             while (observerIterator.hasNext()) {
                 var observer = observerIterator.next();
