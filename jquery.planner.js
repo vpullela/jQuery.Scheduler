@@ -87,7 +87,7 @@ boundary: {left : object/string right: object/string}
         options.boundary = new Boundary(left, right, minDays);
 
         this.options = options;
-        this.dataManager = new WorkbenchModel(options);
+        this.workbenchModel = new WorkbenchModel(options);
 
         this._init();
     }
@@ -107,8 +107,8 @@ boundary: {left : object/string right: object/string}
             this.removeContent();
             this.element.css("width", this.options.width);
 
-            this.vtHeader = new VtHeaderView(this.options, this.dataManager);
-            this.slideView = new SlideView(this.options, this.dataManager);
+            this.vtHeader = new VtHeaderView(this.options, this.workbenchModel);
+            this.slideView = new SlideView(this.options, this.workbenchModel);
 
             this.appendJquery(this.vtHeader);
             this.appendJquery(this.slideView);
@@ -166,11 +166,11 @@ boundary: {left : object/string right: object/string}
         },
 
         getData: function() {
-            return this.dataManager.getData();
+            return this.workbenchModel.getData();
         },
 
         setData: function(data) {
-            this.dataManager.setData(data);
+            this.workbenchModel.setData(data);
             this.render();
         },
 
@@ -185,7 +185,7 @@ boundary: {left : object/string right: object/string}
             this.options.boundary.setRight(DateUtils.convertToDate(boundary.right, this.options.dateFormat));
 
             // recalculate data table with new boundary
-            this.dataManager.setData(this.dataManager.getData());
+            this.workbenchModel.setData(this.workbenchModel.getData());
             this.render();
         }
     });
@@ -193,9 +193,9 @@ boundary: {left : object/string right: object/string}
     /**
      * VtHeaderView class
      */
-    function VtHeaderView(options, dataManager) {
+    function VtHeaderView(options, model) {
         this.options = options;
-        this.dataManager = dataManager;
+        this.model = model;
 
         this._init();
     }
@@ -218,10 +218,10 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var cellHeight = this.options.cellHeight;
 
-            var menu = new MenuView(this.options, this.dataManager);
+            var menu = new MenuView(this.options, this.model);
             this.appendJquery(menu);
 
-            var agregatorIterator = this.dataManager.getIterator();
+            var agregatorIterator = this.model.getIterator();
             while (agregatorIterator.hasNext()) {
                 var agregator = agregatorIterator.next();
 
@@ -244,9 +244,9 @@ boundary: {left : object/string right: object/string}
     /**
      * MenuView Class
      */
-    function MenuView(options, dataManager) {
+    function MenuView(options, model) {
         this.options = options;
-        this.dataManager = dataManager;
+        this.model = model;
 
         this._init();
     }
@@ -274,9 +274,9 @@ boundary: {left : object/string right: object/string}
     /**
      *  SlideView Class
      */
-    function SlideView(options, dataManager) {
+    function SlideView(options, model) {
         this.options = options;
-        this.dataManager = dataManager;
+        this.model = model;
 
         this.contentArray = [];
 
@@ -301,14 +301,14 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var hzHeader = new HzHeaderView(this.options, this.dataManager);
-            var workbenchView = new WorkbenchView(this.options, this.dataManager, hzHeader);
+            var hzHeader = new HzHeaderView(this.options, this.model);
+            var workbenchView = new WorkbenchView(this.options, this.model, hzHeader);
 
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
-            var numberOfRows = this.dataManager.getNumberOfRows();
+            var numberOfRows = this.model.getNumberOfRows();
 
             var unavailableDays = numberOfDaysAdj - numberOfDays;
             this.ganttViewBody = $("<div>", {
@@ -357,9 +357,9 @@ boundary: {left : object/string right: object/string}
     /**
      *  HzHeaderView class
      */
-    function HzHeaderView(options, dataManager) {
+    function HzHeaderView(options, model) {
         this.options = options;
-        this.dataManager = dataManager;
+        this.model = model;
         this.daysArray = [];
         this.cellWidth = options.cellWidth;
 
@@ -500,15 +500,15 @@ boundary: {left : object/string right: object/string}
     /**
      * WorkbenchView class
      */
-    function WorkbenchView(options, dataManager, hzHeader) {
+    function WorkbenchView(options, model, hzHeader) {
         this.options = options;
-        this.dataManager = dataManager;
+        this.model = model;
         this.hzHeader = hzHeader;
 
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
 
-        this.selectedBlocks = new SelectedBlocks();
+//        this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
         this.resizedLeft = 0;
@@ -540,7 +540,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var agregatorIterator = this.dataManager.getIterator();
+            var agregatorIterator = this.model.getIterator();
             while (agregatorIterator.hasNext()) {
                 var dataAgregator = agregatorIterator.next();
                 var agregatorView = new AgregatorView(this.options, dataAgregator);
@@ -605,9 +605,9 @@ boundary: {left : object/string right: object/string}
             var resizedBlock = ui.helper;
 
             resizedBlock.css("position", "relative"); // revert default position changing
-            this.selectedBlocks.addBlock(resizedBlock);
+            this.model.selectedBlocks.addBlock(resizedBlock);
 
-            var blockIterator = this.selectedBlocks.getIterator();
+            var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
 
@@ -645,7 +645,7 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            var blockIterator = this.selectedBlocks.getIterator();
+            var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
 
@@ -663,7 +663,7 @@ boundary: {left : object/string right: object/string}
         onResizeBlockStop: function(e, ui) {
             /* TODO: ?duplication onDragBlockStop */
             var grid = this.hzHeader.getGrid();
-            var blockIterator = this.selectedBlocks.getIterator();
+            var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
                 block.next().remove();
@@ -671,7 +671,7 @@ boundary: {left : object/string right: object/string}
                 block.data("interval", this.calculateDates(block, grid));
             }
 
-            this.dataManager.updateWithSelectedBlocks(this.selectedBlocks);
+            this.model.updateWithSelectedBlocks();
         },
 
         onDragBlockStart: function(e, ui) {
@@ -684,11 +684,11 @@ boundary: {left : object/string right: object/string}
             if (!this.isBlocksDragged && blockLeft != ui.position.left) {
                 this.isBlocksDragged = true;
 
-                this.selectedBlocks.addBlock(draggedBlock);
+                this.model.selectedBlocks.addBlock();
             }
 
             if (this.isBlocksDragged) {
-                var blockIterator = this.selectedBlocks.getIterator();
+                var blockIterator = this.model.selectedBlocks.getIterator();
                 while (blockIterator.hasNext()) {
                     var block = blockIterator.next();
 
@@ -706,20 +706,21 @@ boundary: {left : object/string right: object/string}
 
             /* TODO:: add onScrollStop - grid calculation */
             var grid = this.hzHeader.getGrid();
-            var blockIterator = this.selectedBlocks.getIterator();
+            var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
                 block.data("interval", this.calculateDates(block, grid));
             }
 
-            this.dataManager.updateWithSelectedBlocks(this.selectedBlocks);
+            this.model.updateWithSelectedBlocks();
         },
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
             var blockView = this.getBlockView($(e.currentTarget).data("position"));
             /* TODO:: move selectedBlocks from WorkbenchView */
-            this.selectedBlocks.addBlock(blockView.getJquery());
+            blockView.blockController.select();
+            this.model.selectedBlocks.addBlock(blockView.getJquery());
         },
         onClickOnContainer: function(e) {
             var element = $(e.currentTarget)
@@ -732,7 +733,7 @@ boundary: {left : object/string right: object/string}
                 "end" : startDate
             };
 
-            this.dataManager.addBlock(position, newBlockData);
+            this.model.addBlock(position, newBlockData);
         },
 
         getBlockView: function(position) {
@@ -780,7 +781,6 @@ boundary: {left : object/string right: object/string}
 
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
-        this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
         this.resizedLeft = 0;
@@ -844,9 +844,9 @@ boundary: {left : object/string right: object/string}
     /**
      * RowView class
      */
-    function RowView(options, rowModel) {
+    function RowView(options, model) {
         this.options = options;
-        this.rowModel = rowModel;
+        this.model = model;
 
         this.numberOfDays = this.options.boundary.getNumberOfDays(true);
 
@@ -868,7 +868,7 @@ boundary: {left : object/string right: object/string}
                 }
             });
             // TODO:: data method
-            row.data("position", this.rowModel.getPosition());
+            row.data("position", this.model.getPosition());
 
             this.setJquery(row);
             this.startObserveModel();
@@ -879,7 +879,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            var blockIterator = this.rowModel.getIterator();
+            var blockIterator = this.model.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
                 var block = new BlockView(this.options, blockModel);
@@ -893,17 +893,12 @@ boundary: {left : object/string right: object/string}
 
         removeContent: function() {
             $(this.contentArray).each(function() {
-                this.destroyJquery()
+                this.destroyJquery();
+                this.stopObserveModel();
             });
             this.contentArray = [];
         },
 
-        startObserveModel: function() {
-            this.rowModel.addObserver(this);
-        },
-        stopObserveModel: function() {
-            this.rowModel.removeObserver(this);
-        },
 
         update: function() {
             this.render();
@@ -913,10 +908,20 @@ boundary: {left : object/string right: object/string}
     /**
      * BlockView class
      */
-    function BlockView(options, blockModel) {
+    function BlockView(options, model) {
         this.options = options;
-        this.blockModel = blockModel;
-
+        this.model = model;
+        this.blockController = undefined;
+        
+        /* check if block is agregator*/ 
+        if (model.parent.order == -1) { 
+            this.blockController = new BlockAgregatorController(this, model);
+        } else {
+            this.blockController = new BlockController(this, model);
+        }
+        
+        this.startObserveModel();
+        
         this._init();
     }
     BlockView.prototype = Object.create(AbstractView.prototype);
@@ -926,8 +931,8 @@ boundary: {left : object/string right: object/string}
             this.cellWidth = this.options.cellWidth;
 
             var cellHeight = this.options.cellHeight;
-            var size = DateUtils.daysBetween(this.blockModel.start(), this.blockModel.end()) + 1;
-            var offset = DateUtils.daysBetween(this.blockModel.getPreviousBlockEnd(), this.blockModel.start());
+            var size = DateUtils.daysBetween(this.model.start(), this.model.end()) + 1;
+            var offset = DateUtils.daysBetween(this.model.getPreviousBlockEnd(), this.model.start());
 
             var block = $("<div>", {
                 "class": "planner-block",
@@ -939,11 +944,11 @@ boundary: {left : object/string right: object/string}
                     "margin-right" : "2px"
                 }
             });
-            if (this.blockModel.color()) {
-                block.css("background-color", this.blockModel.color());
+            if (this.model.color()) {
+                block.css("background-color", this.model.color());
             }
             // TODO:: data method
-            block.data("position", this.blockModel.getPosition());
+            block.data("position", this.model.getPosition());
 
             // duration
             var textBlock = $("<div>", { "class": "planner-block-text" }).text(size);
@@ -951,9 +956,51 @@ boundary: {left : object/string right: object/string}
             block.append(textBlock);
 
             this.setJquery(block);
+        },
+        update:  function() {
+            this.blockController.select();
         }
-
     });
+
+    /**
+     * BlockController class
+     */
+    function BlockController(blockView, blockModel) {
+        this.blockModel = blockModel;
+        this.blockView = blockView;
+    }
+
+    $.extend(BlockController.prototype, {
+        select: function() {
+            var workbenchModel = this.blockModel.parent.parent.parent;
+            
+            workbenchModel.selectedBlocks.addBlock(this.blockView.getJquery());
+            console.log(this.blockModel.parent.parent.parent);
+        }
+    });
+    
+    /**
+     * BlockAgregatorController class
+     */
+    function BlockAgregatorController(blockView, blockModel) {
+        this.blockModel = blockModel;
+    }
+
+    $.extend(BlockAgregatorController.prototype, {
+        select: function() {
+            var agregatorModel = this.blockModel.parent.parent;
+            var positionIterator = new ArrayIterator(this.blockModel.blockData.mergedBlocks);
+            
+            while(positionIterator.hasNext()) {
+                var position = positionIterator.next();
+                var rowModel = agregatorModel.getRow(position.row);
+                var blockModel = rowModel.getBlock(position.block);
+
+                blockModel.notifyObservers();
+            }
+        }
+    });
+    
 
     /**
      * WorkbenchModel class
@@ -961,6 +1008,8 @@ boundary: {left : object/string right: object/string}
     function WorkbenchModel(options) {
         this.options = options;
         this.data = [];
+
+        this.selectedBlocks = new SelectedBlocks();
     }
 
     $.extend(WorkbenchModel.prototype, {
@@ -969,7 +1018,7 @@ boundary: {left : object/string right: object/string}
             this.data = [];
 
             for (var rowNum in data) {
-                var agregator = new AgregatorModel(this.options, rowNum, data[rowNum].metadata, data[rowNum].data);
+                var agregator = new AgregatorModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
                 this.data.push(agregator);
             }
         },
@@ -1064,7 +1113,7 @@ boundary: {left : object/string right: object/string}
             selectedBlocks.length = 0;
             this.data[rowNum].setAgregate(rowData);
         },
-        updateWithSelectedBlocks: function(selectedBlocks) {
+        updateWithSelectedBlocks: function() {
             var blockListBuffer = {
                 rowList: [],
                 addBlockList: function(key, row) {
@@ -1089,7 +1138,7 @@ boundary: {left : object/string right: object/string}
                 }
             };
 
-            var selectedBlockIterator = selectedBlocks.getIterator();
+            var selectedBlockIterator = this.selectedBlocks.getIterator();
             while (selectedBlockIterator.hasNext()) {
                 selectedBlock = selectedBlockIterator.next();
 
@@ -1123,7 +1172,7 @@ boundary: {left : object/string right: object/string}
                 agregator.updateAgregatedRow();
             }
 
-            selectedBlocks.empty();
+            this.selectedBlocks.empty();
         },
 
         // block
@@ -1146,12 +1195,13 @@ boundary: {left : object/string right: object/string}
     /**
      * AgregatorModel class
      */
-    function AgregatorModel(options, order, metadata, data) {
-        this.options = options;
+    function AgregatorModel(parent, order, metadata, data) {
+        this.parent = parent;
+        this.options = this.parent.options;
         this.order = order;
 
         this.rowList = [];
-        this.agregatedRow = undefined;
+        this.agregatedRow = new RowModel(this, -1, {}, []);
 
         this.minDate = undefined;
         this.maxDate = undefined;
@@ -1168,10 +1218,13 @@ boundary: {left : object/string right: object/string}
             var rowIterator = this.getIterator();
             while (rowIterator.hasNext()) {
                 var rowModel = rowIterator.next();
-                blockList = blockList.concat(rowModel.getBlockListJson());
+                var blockIterator = rowModel.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+                    blockList.push({start: block.start(), end: block.end(), position: block.getPosition()});
+                }
             }
 
-            blockList = $.extend(true, [], blockList);
             this.agregatedRow.setBlockList(this.prepareRowData(blockList));
             this.agregatedRow.notifyObservers();
         },
@@ -1181,9 +1234,8 @@ boundary: {left : object/string right: object/string}
             for (rowNum in data) {
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, this.prepareRowData(data[rowNum].data));
                 this.rowList.push(row);
-                blockList = blockList.concat(data[rowNum].data);
             }
-            this.agregatedRow = new RowModel(this, -1, {}, this.prepareRowData(blockList));
+            this.updateAgregatedRow();
         },
         getData: function() {
             return this.rowList;
@@ -1282,7 +1334,10 @@ boundary: {left : object/string right: object/string}
             });
 
             /* merge crossed intervals (TODO: can be optimized) */
+            /* TODO: move to separete functin add collectBlockPositions parameter for agregator functionality*/
             var currentBlock = correctArr[0];
+            currentBlock.mergedBlocks = [];
+            currentBlock.mergedBlocks.push(currentBlock.position);
             var mergedArr = [];
             for (var i=1; i < correctArr.length; i++) {
                 var nextBlock = correctArr[i];
@@ -1292,14 +1347,18 @@ boundary: {left : object/string right: object/string}
                 var nextEndDate = nextBlock.end;
 
                 if (currentEndDate.compareTo(nextEndDate) >= 0) {
+                    currentBlock.mergedBlocks.push(nextBlock.position);
                     continue;
                 }
                 if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
                     currentBlock.end = nextBlock.end;
+                    currentBlock.mergedBlocks.push(nextBlock.position);
                     continue;
                 }
                 mergedArr.push(currentBlock);
                 currentBlock = nextBlock;
+                currentBlock.mergedBlocks = [];
+                currentBlock.mergedBlocks.push(nextBlock.position);
             }
             mergedArr.push(currentBlock);
 
@@ -1395,6 +1454,8 @@ boundary: {left : object/string right: object/string}
         this.parent = parent;
         this.order = blockNum;
         this.blockData = blockData;
+        
+        this.observerList = [];
         /* first day in row if not set */
         this.previousBlockEnd = previousBlockEnd || this.parent.parent.options.boundary.getLeft();
     }
@@ -1423,7 +1484,26 @@ boundary: {left : object/string right: object/string}
                 row: this.parent.order,
                 agregator: this.parent.parent.order
             };
-        }
+        },
+
+        /* TODO: move to abstract model (create AbstractModel)*/
+        addObserver: function(observer) {
+            return this.observerList.push(observer);
+        },
+        removeObserver: function(observer) {
+            for (var index in this.observerList) {
+                if (observer == this.observerList[index]) {
+                    this.observerList.splice(index, 1);
+                }
+            }
+        },
+        notifyObservers: function() {
+            observerIterator = new ArrayIterator(this.observerList);
+            while (observerIterator.hasNext()) {
+                var observer = observerIterator.next();
+                observer.update();
+            }
+        },
     });
 
     /**
@@ -1594,6 +1674,13 @@ boundary: {left : object/string right: object/string}
             } else {
                 this.getJquery().append(jQueryWrapper.getJquery());
             }
+        },
+        
+        startObserveModel: function() {
+            this.model.addObserver(this);
+        },
+        stopObserveModel: function() {
+            this.model.removeObserver(this);
         },
     });
 
