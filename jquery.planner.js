@@ -684,7 +684,7 @@ boundary: {left : object/string right: object/string}
             if (!this.isBlocksDragged && blockLeft != ui.position.left) {
                 this.isBlocksDragged = true;
 
-                this.model.selectedBlocks.addBlock();
+                this.model.selectedBlocks.addBlock(draggedBlock);
             }
 
             if (this.isBlocksDragged) {
@@ -975,7 +975,6 @@ boundary: {left : object/string right: object/string}
             var workbenchModel = this.blockModel.parent.parent.parent;
             
             workbenchModel.selectedBlocks.addBlock(this.blockView.getJquery());
-            console.log(this.blockModel.parent.parent.parent);
         }
     });
     
@@ -1164,8 +1163,8 @@ boundary: {left : object/string right: object/string}
 
                 var agregator = this.getAgregator(blockList.key.agregator);
                 var row = agregator.getRow(blockList.key.row);
-                /*TODO:: prepareRowData replace*/
-                row.setBlockList(agregator.prepareRowData(blockList.row));
+
+                row.setBlockList(blockList.row);
                 row.notifyObservers();
 
                 /*TODO:: remove agregator update dupliction */
@@ -1225,14 +1224,14 @@ boundary: {left : object/string right: object/string}
                 }
             }
 
-            this.agregatedRow.setBlockList(this.prepareRowData(blockList));
+            this.agregatedRow.setBlockList(blockList);
             this.agregatedRow.notifyObservers();
         },
 
         setData: function(data) {
             var blockList = []
             for (rowNum in data) {
-                var row = new RowModel(this, rowNum, data[rowNum].metadata, this.prepareRowData(data[rowNum].data));
+                var row = new RowModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
                 this.rowList.push(row);
             }
             this.updateAgregatedRow();
@@ -1258,112 +1257,6 @@ boundary: {left : object/string right: object/string}
         },
 
         // TODO:: move to RowModel class
-        prepareRowData: function(rowData) {
-            var correctArr = [];
-            /* TODO: ? move to separete function */
-            for(var i=0; i< rowData.length; i++) {
-                /* skip if period is not set */
-                if (!rowData[i].start || !rowData[i].end) {
-                    continue;
-                }
-
-                /* convert if dates in string */
-                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
-                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
-
-                /* remove intervals with switched date */
-                if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
-                    continue;
-                }
-
-                /* fit to boundary */
-                if (!this.options.expandBorder) {
-
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
-                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
-                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
-                        rowData[i].start = this.options.boundary.getLeft();
-                    }
-                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        rowData[i].end = this.options.boundary.getRight();
-                    }
-                }
-
-                /* calculate max/min dates  */
-                if (!this.minDate || this.minDate.compareTo(rowData[i].start) >= 0) {
-                    this.minDate = rowData[i].start;
-                }
-                if (!this.maxDate || this.maxDate.compareTo(rowData[i].end) <= 0) {
-                    this.maxDate = rowData[i].end;
-                }
-
-                correctArr.push(rowData[i]);
-            }
-
-            /* change bundaries */
-            if (this.options.expandBorder) {
-                if (this.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
-                    this.options.boundary.setLeft(this.minDate);
-                }
-                if (this.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
-                    this.options.boundary.setRight(this.maxDate);
-                }
-            }
-
-            if (correctArr.length < 2) {
-                return correctArr;
-            }
-
-            /* sort by start date */
-            correctArr.sort(function(leftBlock, rightBlock) {
-                var leftStartDate = leftBlock.start.getTime();
-                var rightStartDate = rightBlock.start.getTime();
-                if (leftStartDate < rightStartDate) {
-                    return -1;
-                } else if (leftStartDate > rightStartDate) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            });
-
-            /* merge crossed intervals (TODO: can be optimized) */
-            /* TODO: move to separete functin add collectBlockPositions parameter for agregator functionality*/
-            var currentBlock = correctArr[0];
-            currentBlock.mergedBlocks = [];
-            currentBlock.mergedBlocks.push(currentBlock.position);
-            var mergedArr = [];
-            for (var i=1; i < correctArr.length; i++) {
-                var nextBlock = correctArr[i];
-                var currentStartDate = currentBlock.start;
-                var currentEndDate = currentBlock.end;
-                var nextStartDate = nextBlock.start;
-                var nextEndDate = nextBlock.end;
-
-                if (currentEndDate.compareTo(nextEndDate) >= 0) {
-                    currentBlock.mergedBlocks.push(nextBlock.position);
-                    continue;
-                }
-                if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
-                    currentBlock.end = nextBlock.end;
-                    currentBlock.mergedBlocks.push(nextBlock.position);
-                    continue;
-                }
-                mergedArr.push(currentBlock);
-                currentBlock = nextBlock;
-                currentBlock.mergedBlocks = [];
-                currentBlock.mergedBlocks.push(nextBlock.position);
-            }
-            mergedArr.push(currentBlock);
-
-            return mergedArr;
-        },
         getIterator: function() {
             return new ArrayIterator(this.rowList);
         }
@@ -1375,14 +1268,26 @@ boundary: {left : object/string right: object/string}
     function RowModel(parent, rowNum, metadata, blockList) {
         this.parent = parent;
         this.order = rowNum;
+        
+        this.options = this.parent.parent.options;
+        
         this.metadata = metadata;
         this.blockList = [];
 
         this.observerList = [];
         this.setBlockList(blockList);
+        
+        /*TODO: create subclass AgregatedRowModel */
+        this.isAgregatorRow = (this.order == -1); 
     }
     $.extend(RowModel.prototype, {
         setBlockList: function(blockList) {
+            if (this.isAgregatorRow) {
+                blockList = this.mergeCrossedBlocks(blockList);
+            } else {
+                blockList = this.prepareRowData(blockList);
+            }
+
             this.blockList = [];
             var previousBlockEnd = this.parent.options.boundary.getLeft(); // first day in row
             for (blockNum in blockList) {
@@ -1445,6 +1350,133 @@ boundary: {left : object/string right: object/string}
         getIterator: function() {
             return new ArrayIterator(this.blockList);
         },
+
+        // help function
+        prepareRowData: function(rowData) {
+            var correctArr = [];
+            /* TODO: ? move to a separete function */
+            for(var i=0; i< rowData.length; i++) {
+                /* skip if period is not set */
+                if (!rowData[i].start || !rowData[i].end) {
+                    continue;
+                }
+
+                /* convert if dates in string */
+                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
+                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
+
+                /* remove intervals with switched date */
+                if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
+                    continue;
+                }
+
+                /* fit to boundary */
+                if (!this.options.expandBorder) {
+
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
+                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
+                        continue;
+                    }
+                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
+                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
+                        continue;
+                    }
+                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
+                        rowData[i].start = this.options.boundary.getLeft();
+                    }
+                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
+                        rowData[i].end = this.options.boundary.getRight();
+                    }
+                }
+
+                /* calculate max/min dates  */
+                if (!this.parent.minDate || this.parent.minDate.compareTo(rowData[i].start) >= 0) {
+                    this.parent.minDate = rowData[i].start;
+                }
+                if (!this.parent.maxDate || this.parent.maxDate.compareTo(rowData[i].end) <= 0) {
+                    this.parent.maxDate = rowData[i].end;
+                }
+
+                correctArr.push(rowData[i]);
+            }
+
+            if (correctArr.length < 1) {
+                return correctArr;
+            }
+
+            /* change bundaries */
+            if (this.options.expandBorder) {
+                if (this.parent.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
+                    this.options.boundary.setLeft(this.parent.minDate);
+                }
+                if (this.parent.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
+                    this.options.boundary.setRight(this.parent.maxDate);
+                }
+            }
+
+            /* merge crossed intervals */
+            var mergedArr = this.mergeCrossedBlocks(correctArr);
+            return mergedArr;
+        },
+        mergeCrossedBlocks: function(blockList) {
+            /* (TODO: function can be optimized) */
+
+            blockList = this.sortBlockList(blockList);
+
+            var currentBlock = blockList[0];
+            
+            if (this.isAgregatorRow) {
+                currentBlock.mergedBlocks = [];
+                currentBlock.mergedBlocks.push(currentBlock.position);
+            }
+
+            var mergedArr = [];
+            for (var i=1; i < blockList.length; i++) {
+                var nextBlock = blockList[i];
+                var currentStartDate = currentBlock.start;
+                var currentEndDate = currentBlock.end;
+                var nextStartDate = nextBlock.start;
+                var nextEndDate = nextBlock.end;
+
+                if (currentEndDate.compareTo(nextEndDate) >= 0) {
+                    if (this.isAgregatorRow) {
+                        currentBlock.mergedBlocks.push(nextBlock.position);
+                    }
+                    continue;
+                }
+                if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
+                    if (this.isAgregatorRow) {
+                        currentBlock.end = nextBlock.end;
+                        currentBlock.mergedBlocks.push(nextBlock.position);
+                    }
+                    continue;
+                }
+                mergedArr.push(currentBlock);
+                currentBlock = nextBlock;
+
+                if (this.isAgregatorRow) {
+                    currentBlock.mergedBlocks = [];
+                    currentBlock.mergedBlocks.push(nextBlock.position);
+                }
+            }
+            mergedArr.push(currentBlock);
+
+            return mergedArr;
+        },
+        sortBlockList: function(blockList) {
+            blockList.sort(function(leftBlock, rightBlock) {
+                var leftStartDate = leftBlock.start.getTime();
+                var rightStartDate = rightBlock.start.getTime();
+                if (leftStartDate < rightStartDate) {
+                    return -1;
+                } else if (leftStartDate > rightStartDate) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+            return blockList;
+        }
     });
 
     /**
