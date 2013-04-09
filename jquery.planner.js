@@ -508,7 +508,6 @@ boundary: {left : object/string right: object/string}
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
 
-//        this.selectedBlocks = new SelectedBlocks();
         this.isBlocksDragged = false;
         this.resizedWidth = 0;
         this.resizedLeft = 0;
@@ -603,9 +602,11 @@ boundary: {left : object/string right: object/string}
 
         onResizeBlockStart: function(e, ui) {
             var resizedBlock = ui.helper;
+            resizedBlock.css("position", "relative"); // revert default position
 
-            resizedBlock.css("position", "relative"); // revert default position changing
-            this.model.selectedBlocks.addBlock(resizedBlock);
+            var blockView = this.getBlockView(resizedBlock.data("position"));
+            blockView.blockController.select();
+            this.model.selectedBlocks.addBlock(blockView.getJquery());
 
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
@@ -675,7 +676,10 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            /* empty */
+            var resizedBlock = ui.helper;
+            var blockView = this.getBlockView(resizedBlock.data("position"));
+            blockView.blockController.select();
+            this.model.selectedBlocks.addBlock(blockView.getJquery());
         },
         onDragBlock: function(e, ui) {
             var draggedBlock = ui.helper;
@@ -717,8 +721,8 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
+
             var blockView = this.getBlockView($(e.currentTarget).data("position"));
-            /* TODO:: move selectedBlocks from WorkbenchView */
             blockView.blockController.select();
             this.model.selectedBlocks.addBlock(blockView.getJquery());
         },
@@ -912,16 +916,16 @@ boundary: {left : object/string right: object/string}
         this.options = options;
         this.model = model;
         this.blockController = undefined;
-        
-        /* check if block is agregator*/ 
-        if (model.parent.order == -1) { 
+
+        /* check if block is agregator*/
+        if (model.parent.order == -1) {
             this.blockController = new BlockAgregatorController(this, model);
         } else {
             this.blockController = new BlockController(this, model);
         }
-        
+
         this.startObserveModel();
-        
+
         this._init();
     }
     BlockView.prototype = Object.create(AbstractView.prototype);
@@ -947,6 +951,7 @@ boundary: {left : object/string right: object/string}
             if (this.model.color()) {
                 block.css("background-color", this.model.color());
             }
+
             // TODO:: data method
             block.data("position", this.model.getPosition());
 
@@ -973,11 +978,11 @@ boundary: {left : object/string right: object/string}
     $.extend(BlockController.prototype, {
         select: function() {
             var workbenchModel = this.blockModel.parent.parent.parent;
-            
+
             workbenchModel.selectedBlocks.addBlock(this.blockView.getJquery());
         }
     });
-    
+
     /**
      * BlockAgregatorController class
      */
@@ -989,7 +994,7 @@ boundary: {left : object/string right: object/string}
         select: function() {
             var agregatorModel = this.blockModel.parent.parent;
             var positionIterator = new ArrayIterator(this.blockModel.blockData.mergedBlocks);
-            
+
             while(positionIterator.hasNext()) {
                 var position = positionIterator.next();
                 var rowModel = agregatorModel.getRow(position.row);
@@ -999,7 +1004,7 @@ boundary: {left : object/string right: object/string}
             }
         }
     });
-    
+
 
     /**
      * WorkbenchModel class
@@ -1071,46 +1076,16 @@ boundary: {left : object/string right: object/string}
             return this.data[order];
         },
 
-        // row
-        setRowData: function(rowNumber, rowData) {
-            this.data[rowNumber].setAgregate(this.prepareRowData(rowData));
-        },
-        getRowData: function(rowNumber) {
-            return this.data[rowNumber].getAgregate();
-        },
         addBlock: function(position, blockData) {
             var agregator = this.getAgregator(position.agregator);
             var row = agregator.getRow(position.row);
             var blockList = row.getBlockListJson();
 
             blockList.push(blockData);
-            row.setBlockList(agregator.prepareRowData(blockList));
+            row.setBlockList(blockList);
             row.notifyObservers();
 
             agregator.updateAgregatedRow();
-        },
-        deleteBlockList: function(rowNumber, blockNumberList) {
-            var rowData = this.data[rowNumber].getAgregate();
-
-            blockNumberList.sort().reverse();
-            for(var key in blockNumberList) {
-                blockNumber = parseInt(blockNumberList[key], 10);
-                rowData.splice(blockNumber, 1);
-            }
-
-            this.data[rowNumber].setAgregate(rowData);
-        },
-        updateRow: function(rowNum, selectedBlocks) {
-            var rowData = this.data[rowNum].getAgregate();
-
-            for (var blockNum in selectedBlocks) {
-                var newBlock = selectedBlocks[blockNum];
-                var oldBlock = rowData[newBlock.data("blockNum")];
-
-                oldBlock = $.extend(oldBlock, newBlock);
-            }
-            selectedBlocks.length = 0;
-            this.data[rowNum].setAgregate(rowData);
         },
         updateWithSelectedBlocks: function() {
             var blockListBuffer = {
@@ -1120,7 +1095,7 @@ boundary: {left : object/string right: object/string}
                     if (presenredRow === false) {
                         this.rowList.push({key: key, row: row});
                     } else {
-                        presenredRow.row = row;
+                        presenredRow = row;
                     }
                 },
                 getBlockList: function(key) {
@@ -1146,16 +1121,17 @@ boundary: {left : object/string right: object/string}
                 var key = {agregator: position.agregator, row: position.row};
 
                 var blockList = blockListBuffer.getBlockList(key);
+
                 if (blockList === false) {
                     var agregator = this.getAgregator(position.agregator);
                     var row = agregator.getRow(position.row);
                     blockList = row.getBlockListJson();
                 }
+
                 var block = blockList[position.block];
                 block = $.extend(block, interval);
                 blockListBuffer.addBlockList(key, blockList);
             }
-
             var blockListIterator = blockListBuffer.getIterator();
 
             while (blockListIterator.hasNext()) {
@@ -1163,25 +1139,15 @@ boundary: {left : object/string right: object/string}
 
                 var agregator = this.getAgregator(blockList.key.agregator);
                 var row = agregator.getRow(blockList.key.row);
-
                 row.setBlockList(blockList.row);
                 row.notifyObservers();
 
                 /*TODO:: remove agregator update dupliction */
                 agregator.updateAgregatedRow();
             }
-
             this.selectedBlocks.empty();
         },
 
-        // block
-        updateBlock: function (rowNumber, blockNumber, blockData) {
-            var rowData = this.data[rowNumber].getAgregate();
-            $.extend(rowData[blockNumber], blockData);
-            this.data[rowNumber].setAgregate(rowData);
-        },
-
-        // vtMenu
         getNumberOfRows: function() {
             return this.data.length;
         },
@@ -1240,6 +1206,9 @@ boundary: {left : object/string right: object/string}
             return this.rowList;
         },
         getRow: function(order) {
+            if (order == -1) {
+                return this.agregatedRow;
+            }
             return this.rowList[order];
         },
 
@@ -1268,23 +1237,24 @@ boundary: {left : object/string right: object/string}
     function RowModel(parent, rowNum, metadata, blockList) {
         this.parent = parent;
         this.order = rowNum;
-        
+
         this.options = this.parent.parent.options;
-        
+
         this.metadata = metadata;
         this.blockList = [];
 
         this.observerList = [];
         this.setBlockList(blockList);
-        
+
         /*TODO: create subclass AgregatedRowModel */
-        this.isAgregatorRow = (this.order == -1); 
+        this.isAgregatorRow = (this.order == -1);
     }
     $.extend(RowModel.prototype, {
         setBlockList: function(blockList) {
             if (this.isAgregatorRow) {
                 blockList = this.mergeCrossedBlocks(blockList);
             } else {
+                blockList = $.extend(true, [], blockList);
                 blockList = this.prepareRowData(blockList);
             }
 
@@ -1413,7 +1383,6 @@ boundary: {left : object/string right: object/string}
                     this.options.boundary.setRight(this.parent.maxDate);
                 }
             }
-
             /* merge crossed intervals */
             var mergedArr = this.mergeCrossedBlocks(correctArr);
             return mergedArr;
@@ -1424,7 +1393,7 @@ boundary: {left : object/string right: object/string}
             blockList = this.sortBlockList(blockList);
 
             var currentBlock = blockList[0];
-            
+
             if (this.isAgregatorRow) {
                 currentBlock.mergedBlocks = [];
                 currentBlock.mergedBlocks.push(currentBlock.position);
@@ -1446,9 +1415,9 @@ boundary: {left : object/string right: object/string}
                 }
                 if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
                     if (this.isAgregatorRow) {
-                        currentBlock.end = nextBlock.end;
                         currentBlock.mergedBlocks.push(nextBlock.position);
                     }
+                    currentBlock.end = nextBlock.end;
                     continue;
                 }
                 mergedArr.push(currentBlock);
@@ -1486,10 +1455,15 @@ boundary: {left : object/string right: object/string}
         this.parent = parent;
         this.order = blockNum;
         this.blockData = blockData;
-        
+
         this.observerList = [];
         /* first day in row if not set */
         this.previousBlockEnd = previousBlockEnd || this.parent.parent.options.boundary.getLeft();
+
+        /* HACK: set an agregator color */
+        if (this.parent.isAgregatorRow) {
+            this.blockData.color = "#CFE3BF";
+        }
     }
     $.extend(BlockModel.prototype, {
         start: function() {
@@ -1590,6 +1564,7 @@ boundary: {left : object/string right: object/string}
             return new ArrayIterator(this.selectedBlocks);
         },
     });
+
     /**
      * Boundary class
      */
@@ -1707,7 +1682,7 @@ boundary: {left : object/string right: object/string}
                 this.getJquery().append(jQueryWrapper.getJquery());
             }
         },
-        
+
         startObserveModel: function() {
             this.model.addObserver(this);
         },
