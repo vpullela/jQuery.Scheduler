@@ -166,7 +166,7 @@ boundary: {left : object/string right: object/string}
         },
 
         getData: function() {
-            return this.workbenchModel.getData();
+            return this.workbenchModel.getDataJson();
         },
 
         setData: function(data) {
@@ -677,6 +677,8 @@ boundary: {left : object/string right: object/string}
 
         onDragBlockStart: function(e, ui) {
             var resizedBlock = ui.helper;
+
+            /*TODO: fix duplication onResize and onClick */
             var blockView = this.getBlockView(resizedBlock.data("position"));
             blockView.blockController.select();
             this.model.selectedBlocks.addBlock(blockView.getJquery());
@@ -727,6 +729,11 @@ boundary: {left : object/string right: object/string}
             this.model.selectedBlocks.addBlock(blockView.getJquery());
         },
         onClickOnContainer: function(e) {
+            if (!this.model.selectedBlocks.isEmpty()) {
+                this.model.selectedBlocks.empty();
+                return;
+            }
+
             var element = $(e.currentTarget)
             var grid = this.hzHeader.getGrid();
             var startDate = grid.getDateByPos(e.pageX);
@@ -1037,6 +1044,28 @@ boundary: {left : object/string right: object/string}
                 var data = [];
                 while (rowIterator.hasNext()) {
                     var row = rowIterator.next();
+                    data.push({metadata: row.metadata, data: row.getBlockList()});
+                }
+
+                var dataRow = {
+                    metadata: agregator.metadata,
+                    data: data
+                }
+                result.push(dataRow);
+            }
+            return result;
+        },
+        /* TODO: fix dupliction getData */
+        getDataJson: function() {
+            var result = [];
+
+            var agregatorIterator = this.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var agregator = agregatorIterator.next();
+                var rowIterator = agregator.getIterator();
+                var data = [];
+                while (rowIterator.hasNext()) {
+                    var row = rowIterator.next();
                     data.push({metadata: row.metadata, data: row.getBlockListJson()});
                 }
 
@@ -1049,41 +1078,32 @@ boundary: {left : object/string right: object/string}
             return result;
         },
 
-        getDataJson: function() {
-            var convertedData = [];
-            for (var i in this.data) {
-                var row  = this.data[i];
-                var convertedRow = {
-                    metadata: row.metadata,
-                    series: []
-                };
-                for (var j in row.series) {
-                    var serie = row.series[j];
-                    var convertedSerie = $.extend({}, serie); // clone object
-
-                    convertedSerie.start = serie.start.toString(this.options.dateFormat),
-                    convertedSerie.end = serie.end.toString(this.options.dateFormat),
-
-                    convertedRow.series.push(convertedSerie);
-                }
-                convertedData.push(convertedRow);
-            }
-
-           return convertedData;
-        },
-
         getAgregator: function(order) {
             return this.data[order];
         },
 
         addBlock: function(position, blockData) {
             var agregator = this.getAgregator(position.agregator);
-            var row = agregator.getRow(position.row);
-            var blockList = row.getBlockListJson();
+            /*TODO: optimize if statement */
+            if (position.row == -1) {
+                var rowIterator = agregator.getIterator();
+                while (rowIterator.hasNext()) {
+                    var row = rowIterator.next();
+                    var blockList = row.getBlockList();
 
-            blockList.push(blockData);
-            row.setBlockList(blockList);
-            row.notifyObservers();
+                    blockList.push(blockData);
+                    row.setBlockList(blockList);
+                    row.notifyObservers();
+                }
+            } else {
+
+                var row = agregator.getRow(position.row);
+                var blockList = row.getBlockList();
+
+                blockList.push(blockData);
+                row.setBlockList(blockList);
+                row.notifyObservers();
+            }
 
             agregator.updateAgregatedRow();
         },
@@ -1125,7 +1145,7 @@ boundary: {left : object/string right: object/string}
                 if (blockList === false) {
                     var agregator = this.getAgregator(position.agregator);
                     var row = agregator.getRow(position.row);
-                    blockList = row.getBlockListJson();
+                    blockList = row.getBlockList();
                 }
 
                 var block = blockList[position.block];
@@ -1267,14 +1287,20 @@ boundary: {left : object/string right: object/string}
             }
         },
         getBlockList: function() {
-            return this.blockList;
+            var result = [];
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                result.push(block.getBlockData());
+            }
+            return result;
         },
         getBlockListJson: function() {
             var result = [];
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
-                result.push(block.getBlockData());
+                result.push(block.getBlockDataJson());
             }
             return result;
         },
@@ -1453,6 +1479,8 @@ boundary: {left : object/string right: object/string}
      */
     function BlockModel(parent, blockNum, blockData, previousBlockEnd) {
         this.parent = parent;
+        /* TODO: add parent method */
+        this.options = this.parent.parent.parent.options;
         this.order = blockNum;
         this.blockData = blockData;
 
@@ -1478,12 +1506,20 @@ boundary: {left : object/string right: object/string}
         getBlockData: function() {
             return this.blockData;
         },
+        getBlockDataJson: function() {
+            var jsonData = $.extend(true, {}, this.blockData);
+            jsonData.start = jsonData.start.toString(this.options.dateFormat);
+            jsonData.end = jsonData.end.toString(this.options.dateFormat);
+
+            return jsonData;
+        },
         setBlockData: function(blockData) {
             this.blockData = blockData;
         },
         getPreviousBlockEnd: function() {
             return this.previousBlockEnd;
         },
+
         getPosition: function() {
             return {
                 block: this.order,
@@ -1556,7 +1592,16 @@ boundary: {left : object/string right: object/string}
             return false;
         },
 
+        isEmpty: function() {
+            return (this.selectedBlocks.length == 0);
+        },
+
         empty: function() {
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                selectedBlock = blockIterator.next();
+                selectedBlock.removeClass("selected");
+            }
             this.selectedBlocks.length = 0;
         },
 
