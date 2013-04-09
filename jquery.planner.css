@@ -152,8 +152,8 @@ div.planner-slide {
 /* Blocks */
 div.planner-blocks,
 div.planner-blocks-unavailable {
-    background-size: 21px 32px;
-    background-position: 21px 34px;
+    background-size: 21px 26px;
+    background-position: 21px 28px;
     background-repeat: repeat;
 }
 
@@ -170,7 +170,6 @@ div.planner-blocks-unavailable {
 }
 
 div.planner-row {
-    height: 28px;
     padding-top: 4px;
 }
 
