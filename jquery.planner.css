@@ -5,7 +5,8 @@ MIT License Applies
 */
 
 div.planner-vtheader,
-div.planner-vtheader-item,
+div.planner-vtheader-agregator,
+div.planner-vtheader-row,
 div.planner-menu,
 div.planner-menu-item,
 div.planner-slide,
@@ -30,7 +31,7 @@ div.planner-hzheader-day,
 div.planner-vtheader,
 div.planner-blocks,
 div.planner-blocks-unavailable,
-div.planner-vtheader-item-name {
+div.planner-vtheader-agregator-name {
     float: left;
 }
 
@@ -44,7 +45,7 @@ div.planner-hzheader-month.last {
     border-right: none;
 }
 
-div.planner-vtheader-item.last {
+div.planner-vtheader-agregator.last {
     border-bottom: 1px solid #d0d0d0;
 }
 
@@ -102,16 +103,23 @@ div.planner-vtheader {
     margin-bottom: -1000em;
 }
 
-div.planner-vtheader-item,
+div.planner-vtheader-agregator,
 div.planner-menu {
     overflow: hidden;
     color: #666;
     line-height: 16px;
 }
 
-div.planner-vtheader-item {
+div.planner-vtheader-agregator {
     padding-left: 12px;
     border-top: 1px solid #d0d0d0;
+}
+
+div.planner-vtheader-row {
+    margin-left:auto;
+    width: 55px;
+    border-bottom: 1px solid #d0d0d0;
+    border-left: 1px solid #d0d0d0;
 }
 
 div.planner-menu {

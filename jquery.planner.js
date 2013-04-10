@@ -129,7 +129,7 @@ boundary: {left : object/string right: object/string}
         },
 
         applyLastClass: function() {
-            $("div.planner-vtheader div.planner-vtheader-item:last-child", this.getJquery()).addClass("last");
+            $("div.planner-vtheader div.planner-vtheader-agregator:last-child", this.getJquery()).addClass("last");
             $("div.planner-hzheader-days div.planner-hzheader-day:last-child", this.getJquery()).addClass("last");
             $("div.planner-hzheader-months div.planner-hzheader-month:last-child", this.getJquery()).addClass("last");
         },
@@ -225,19 +225,71 @@ boundary: {left : object/string right: object/string}
             while (agregatorIterator.hasNext()) {
                 var agregator = agregatorIterator.next();
 
-                var itemDiv = $("<div>", {
-                    "class": "planner-vtheader-item planner-nonselectable",
-                    "css" : {
-                        "height" : cellHeight * agregator.getNumberOfRows() + "px"
-                    }
-                });
-                itemDiv.append(agregator.getName());
-                this.getJquery().append(itemDiv);
+                var vtHeaderAgregatorVeiw = new VtHeaderAgregatorView(agregator);
+                this.appendJquery(vtHeaderAgregatorVeiw);
             }
         },
 
         removeContent: function() {
             /* empty */
+        }
+    });
+
+    /**
+     * VtHeaderAgregatorView class
+     */
+    function VtHeaderAgregatorView(agregatorModel) {
+        this.model = agregatorModel;
+        this.options = this.model.parent.options;
+
+        this._init();
+    }
+    VtHeaderAgregatorView.prototype = Object.create(AbstractView.prototype);
+    $.extend(VtHeaderAgregatorView.prototype, {
+        _init: function() {
+            var agregatorDiv = $("<div>", {
+                "class": "planner-vtheader-agregator",
+                "css" : {
+                    "height" : this.options.cellHeight * this.model.getNumberOfRows() + "px"
+                }
+            });
+
+            this.setJquery(agregatorDiv);
+
+            this.render();
+        },
+        
+        render: function() {
+            var agregatorNameDiv = $("<div>", {
+                "class": "planner-vtheader-agregator-name planner-nonselectable",
+                "css" : {
+                    "height" : this.options.cellHeight * this.model.getNumberOfRows() + "px"
+                }
+            });
+            agregatorNameDiv.append(this.model.getName());
+            this.getJquery().append(agregatorNameDiv);
+            
+            var rowIterator = this.model.getIterator();
+            
+            /* TODO:: (duplicaion) make agregatorRow iterable */ 
+            var rowDiv = $("<div>", {
+                "class": "planner-vtheader-row planner-nonselectable",
+                "css" : {
+                    "height" : this.options.cellHeight + "px"
+                }
+            });
+            this.getJquery().append(rowDiv);
+            
+            while (rowIterator.hasNext()) {
+                rowIterator.next();
+                var rowDiv = $("<div>", {
+                    "class": "planner-vtheader-row planner-nonselectable",
+                    "css" : {
+                        "height" : this.options.cellHeight + "px"
+                    }
+                });
+                this.getJquery().append(rowDiv);
+            }
         }
     });
 
