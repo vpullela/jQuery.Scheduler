@@ -193,9 +193,9 @@ boundary: {left : object/string right: object/string}
     /**
      * VtHeaderView class
      */
-    function VtHeaderView(options, model) {
+    function VtHeaderView(options, workbenchModel) {
         this.options = options;
-        this.model = model;
+        this.model = workbenchModel;
 
         this._init();
     }
@@ -213,6 +213,7 @@ boundary: {left : object/string right: object/string}
             this.setJquery(headerDiv);
 
             this.render();
+            this.setEvents();
         },
 
         render: function() {
@@ -232,6 +233,19 @@ boundary: {left : object/string right: object/string}
 
         removeContent: function() {
             /* empty */
+        },
+        /** Event Handlers */
+        setEvents: function() {
+            /* TODO: replace selectors */
+            this.getJquery().delegate("div.planner-vtheader-agregator",
+                "click",
+                $.proxy(this.onClickOnAgregator, this));
+        },
+        onClickOnAgregator: function(e) {
+            var position = $(e.currentTarget).data("position");
+            var agregatorModel = this.model.getAgregator(position.agregator);
+
+            agregatorModel.toggle();
         }
     });
 
@@ -248,48 +262,58 @@ boundary: {left : object/string right: object/string}
     $.extend(VtHeaderAgregatorView.prototype, {
         _init: function() {
             var agregatorDiv = $("<div>", {
-                "class": "planner-vtheader-agregator",
-                "css" : {
-                    "height" : this.options.cellHeight * this.model.getNumberOfRows() + "px"
-                }
+                "class": "planner-vtheader-agregator"
             });
+            agregatorDiv.data("position", {agregator: this.model.order});
 
             this.setJquery(agregatorDiv);
+            this.startObserveModel();
 
             this.render();
         },
-        
+
         render: function() {
+            this.removeContent();
+
+            this.getJquery().css("height", this.options.cellHeight * this.model.getNumberOfRows() + "px");
+
             var agregatorNameDiv = $("<div>", {
-                "class": "planner-vtheader-agregator-name planner-nonselectable",
-                "css" : {
-                    "height" : this.options.cellHeight * this.model.getNumberOfRows() + "px"
-                }
+                "class": "planner-vtheader-agregator-name planner-nonselectable"
             });
             agregatorNameDiv.append(this.model.getName());
             this.getJquery().append(agregatorNameDiv);
-            
+
             var rowIterator = this.model.getIterator();
-            
-            /* TODO:: (duplicaion) make agregatorRow iterable */ 
-            var rowDiv = $("<div>", {
-                "class": "planner-vtheader-row planner-nonselectable",
-                "css" : {
-                    "height" : this.options.cellHeight + "px"
-                }
-            });
-            this.getJquery().append(rowDiv);
-            
-            while (rowIterator.hasNext()) {
-                rowIterator.next();
+
+            if (this.model.expanded) {
+                /* TODO:: (duplicaion) make agregatorRow iterable */
                 var rowDiv = $("<div>", {
-                    "class": "planner-vtheader-row planner-nonselectable",
+                    "class": "planner-vtheader-agregate-row planner-nonselectable",
                     "css" : {
                         "height" : this.options.cellHeight + "px"
                     }
                 });
                 this.getJquery().append(rowDiv);
+
+                while (rowIterator.hasNext()) {
+                    var row = rowIterator.next();
+                    var rowDiv = $("<div>", {
+                        "class": "planner-vtheader-row planner-nonselectable",
+                        "css" : {
+                            "height" : this.options.cellHeight + "px"
+                        }
+                    });
+                    /*TODO:: add getters/setters to model */
+                    rowDiv.append(row.metadata.name);
+                    this.getJquery().append(rowDiv);
+                }
             }
+        },
+        removeContent: function() {
+            this.getJquery().empty();
+        },
+        update: function() {
+            this.render();
         }
     });
 
@@ -387,8 +411,6 @@ boundary: {left : object/string right: object/string}
             this.ganttViewBody.append(workbenchView.getJquery());
             this.ganttViewBody.append(this.unavailableDiv);
             this.getJquery().append(this.ganttViewBody);
-
-            workbenchView.setEvents();
         },
 
         removeContent: function() {
@@ -586,6 +608,7 @@ boundary: {left : object/string right: object/string}
             this.setJquery(blocksDiv);
 
             this.render();
+            this.setEvents();
         },
 
         render: function() {
@@ -605,9 +628,10 @@ boundary: {left : object/string right: object/string}
             $(this.contentArray).each(function() {
                 this.removeContent();
                 this.destroyJquery();
+                this.stopObserveModel();
             });
 
-            this.contentArray = [];
+            this.contentArray.length = 0;
         },
 
         /** Event Handlers */
@@ -720,7 +744,6 @@ boundary: {left : object/string right: object/string}
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
                 block.next().remove();
-
                 block.data("interval", this.calculateDates(block, grid));
             }
 
@@ -840,7 +863,7 @@ boundary: {left : object/string right: object/string}
      */
     function AgregatorView(options, agregatorModel) {
         this.options = options;
-        this.agregatorModel = agregatorModel;
+        this.model = agregatorModel;
 
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
@@ -868,16 +891,17 @@ boundary: {left : object/string right: object/string}
                 });
 
             this.setJquery(blocksDiv);
+            this.startObserveModel();
 
             this.render();
         },
         render: function() {
             this.removeContent();
 
-            this.agregatedRowView = new RowView(this.options, this.agregatorModel.getAgregatedRow());
+            this.agregatedRowView = new RowView(this.options, this.model.getAgregatedRow());
             this.appendJquery(this.agregatedRowView);
 
-            var rowIterator = this.agregatorModel.getIterator();
+            var rowIterator = this.model.getIterator();
             while (rowIterator.hasNext()) {
                 var rowModel = rowIterator.next();
                 var rowView = new RowView(this.options, rowModel);
@@ -902,6 +926,9 @@ boundary: {left : object/string right: object/string}
 
             this.contentArray = [];
         },
+        update: function() {
+            this.render();
+        }
     });
 
     /**
@@ -937,8 +964,25 @@ boundary: {left : object/string right: object/string}
             this.startObserveModel();
 
             this.render();
-        },
 
+            if (!this.model.parent.expanded && this.model.order != -1) {
+                this.hide();
+            }
+        },
+        hide: function() {
+            this.getJquery().css({
+                "visibility": "hidden",
+                "height" : 0,
+                "padding" : 0,
+            });
+        },
+        show: function() {
+            this.getJquery().css({
+                "visibility": "",
+                "height": this.options.cellHeight + "px",
+                "padding" : "",
+            });
+        },
         render: function() {
             this.removeContent();
 
@@ -961,7 +1005,6 @@ boundary: {left : object/string right: object/string}
             });
             this.contentArray = [];
         },
-
 
         update: function() {
             this.render();
@@ -1245,6 +1288,10 @@ boundary: {left : object/string right: object/string}
 
         this.metadata = metadata
         this.setData(data);
+
+        this.observerList = [];
+        /* TODO: move to configuration part */
+        this.expanded = false;
     }
     $.extend(AgregatorModel.prototype, {
         getAgregatedRow: function() {
@@ -1264,6 +1311,10 @@ boundary: {left : object/string right: object/string}
 
             this.agregatedRow.setBlockList(blockList);
             this.agregatedRow.notifyObservers();
+        },
+        toggle: function() {
+            this.expanded = !this.expanded;
+            this.notifyObservers();
         },
 
         setData: function(data) {
@@ -1294,7 +1345,29 @@ boundary: {left : object/string right: object/string}
             return this.metadata.name;
         },
         getNumberOfRows: function() {
-            return this.rowList.length + 1;
+            if (this.expanded) {
+                return this.rowList.length + 1;
+            }
+            return 1;
+        },
+
+        /* TODO: move to abstract model (create AbstractModel)*/
+        addObserver: function(observer) {
+            return this.observerList.push(observer);
+        },
+        removeObserver: function(observer) {
+            for (var index in this.observerList) {
+                if (observer == this.observerList[index]) {
+                    this.observerList.splice(index, 1);
+                }
+            }
+        },
+        notifyObservers: function() {
+            observerIterator = new ArrayIterator(this.observerList);
+            while (observerIterator.hasNext()) {
+                var observer = observerIterator.next();
+                observer.update();
+            }
         },
 
         // TODO:: move to RowModel class
@@ -1368,10 +1441,10 @@ boundary: {left : object/string right: object/string}
             return false;
         },
 
+        /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
             return this.observerList.push(observer);
         },
-
         removeObserver: function(observer) {
             for (var index in this.observerList) {
                 if (observer == this.observerList[index]) {
@@ -1379,7 +1452,6 @@ boundary: {left : object/string right: object/string}
                 }
             }
         },
-
         notifyObservers: function() {
             observerIterator = new ArrayIterator(this.observerList);
             while (observerIterator.hasNext()) {

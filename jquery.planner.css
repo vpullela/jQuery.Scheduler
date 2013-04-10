@@ -6,6 +6,7 @@ MIT License Applies
 
 div.planner-vtheader,
 div.planner-vtheader-agregator,
+div.planner-vtheader-agregate-row,
 div.planner-vtheader-row,
 div.planner-menu,
 div.planner-menu-item,
@@ -115,11 +116,18 @@ div.planner-vtheader-agregator {
     border-top: 1px solid #d0d0d0;
 }
 
-div.planner-vtheader-row {
+div.planner-vtheader-row,
+div.planner-vtheader-agregate-row {
     margin-left:auto;
-    width: 55px;
-    border-bottom: 1px solid #d0d0d0;
+    width: 0px;
+    border-top: 1px solid #d0d0d0;
+}
+
+div.planner-vtheader-row {
+    padding-left: 12px;
+    width: 100px;
     border-left: 1px solid #d0d0d0;
+    text-align: left;
 }
 
 div.planner-menu {
