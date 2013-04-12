@@ -1529,7 +1529,7 @@ boundary: {left : object/string right: object/string}
 
                 correctArr.push(rowData[i]);
             }
-
+            /* TODO: ? remove verification ?*/ 
             if (correctArr.length < 1) {
                 return correctArr;
             }
@@ -1549,9 +1549,11 @@ boundary: {left : object/string right: object/string}
         },
         mergeCrossedBlocks: function(blockList) {
             /* (TODO: function can be optimized) */
+            if (blockList.length < 1) {
+                return blockList;
+            }
 
             blockList = this.sortBlockList(blockList);
-
             var currentBlock = blockList[0];
 
             if (this.isAgregatorRow) {
