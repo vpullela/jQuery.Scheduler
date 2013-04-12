@@ -78,11 +78,11 @@ boundary: {left : object/string right: object/string}
         var minDays = Math.floor(options.rowWidth()/options.cellWidth);
         var left = new Date();
         var right = left.clone().addDays(minDays);
-        if (options.boundary && options.boudary.left) {
-            left = DateUtils.convertToDate(options.boundary.left, this.options.dateFormat);
+        if (options.boundary && options.boundary.left) {
+            left = DateUtils.convertToDate(options.boundary.left, options.dateFormat);
         }
-        if (options.boundary && options.boudary.right) {
-            right = DateUtils.convertToDate(options.boundary.right, this.options.dateFormat);
+        if (options.boundary && options.boundary.right) {
+            right = DateUtils.convertToDate(options.boundary.right, options.dateFormat);
         }
         options.boundary = new Boundary(left, right, minDays);
 
