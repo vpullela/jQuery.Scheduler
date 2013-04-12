@@ -26,6 +26,17 @@
     <script type="text/javascript" src="data.js"></script>
     <script type="text/javascript">
         $(function () {
+            if (testData) {
+                var chart = $("#chart").planner({
+                        width: 900,
+                        showWeekends: true,
+                        expandBorder: false,
+                        boundary: testData.boundary,
+                        data: testData.data,
+                    });
+                return;
+            }
+            
             var chart = $("#chart").planner({
                                             width: 900,
                                             showWeekends: true,
