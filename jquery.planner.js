@@ -1083,7 +1083,7 @@ boundary: {left : object/string right: object/string}
 
             var block = $("<div>", {
                 "class": "planner-block",
-                "title": "publication",
+                "title": "start:\t" + this.model.start().toString(this.options.dateFormat) + "\nend:\t" + this.model.end().toString(this.options.dateFormat),
                 "css": {
                     "width": ((size * this.cellWidth) - 3) + "px",
                     "height": (cellHeight - 7) + "px",
