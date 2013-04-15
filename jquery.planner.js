@@ -142,6 +142,9 @@ boundary: {left : object/string right: object/string}
             this.getJquery().delegate("div.planner-menu-item.zoomin",
                 "click",
                 $.proxy(this.onClickOnZoomIn, this));
+            this.getJquery().delegate("div.planner-menu-item.delete",
+                "click",
+                $.proxy(this.onClickOnDelete, this));
         },
 
         onClickOnZoomOut: function(event) {
@@ -163,6 +166,38 @@ boundary: {left : object/string right: object/string}
             this.options.boundary.setMinDays(Math.floor(this.options.rowWidth()/this.options.cellWidth));
 
             this.slideView.render();
+        },
+        
+        onClickOnDelete: function() {
+            var blockIterator = this.workbenchModel.selectedBlocks.getIterator();
+            var positionToUpdateList = []
+            while (blockIterator.hasNext()) {
+                var blockView = blockIterator.next();
+                var position = blockView.getJquery().data('position');
+                blockView.model.remove();
+
+                /*TODO: implement simple/unify deferred row updating mechanism
+                 * (the same thing for updateWithSelectedBlocks function) */ 
+                var positionPresented = false;
+                positionIterator = new ArrayIterator(positionToUpdateList);
+                while (positionIterator.hasNext()) {
+                    positionToUpdate = positionIterator.next();
+                    if (positionToUpdate.agregator == position.agregator && positionToUpdate.row == position.row) {
+                        positionPresented = true;
+                    }
+                }
+                if (!positionPresented) {
+                    positionToUpdateList.push(position);
+                }
+            }
+            
+            positionIterator = new ArrayIterator(positionToUpdateList);
+            while (positionIterator.hasNext()) {
+                position = positionIterator.next();
+                this.workbenchModel.updateRow(position);
+            }
+            
+            this.workbenchModel.selectedBlocks.empty();
         },
 
         getData: function() {
@@ -342,8 +377,11 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var zoomIn = $("<div>", { "class": "planner-menu-item zoomin planner-nonselectable" });
             var zoomOut = $("<div>", { "class": "planner-menu-item zoomout planner-nonselectable" });
+            var deleteSelected = $("<div>", { "class": "planner-menu-item delete planner-nonselectable" });
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
+            this.getJquery().append(deleteSelected);
+
         }
     });
 
@@ -1212,6 +1250,19 @@ boundary: {left : object/string right: object/string}
 
             agregator.updateAgregatedRow();
         },
+        updateRow: function(position) {
+            var agregator = this.getAgregator(position.agregator);
+
+            if (position.row != -1) {
+                var row = agregator.getRow(position.row);
+                var blockList = row.getBlockList();
+
+                row.setBlockList(blockList);
+                row.notifyObservers();
+            }
+
+            agregator.updateAgregatedRow();
+        },
         updateWithSelectedBlocks: function() {
             var blockListBuffer = {
                 rowList: [],
@@ -1451,6 +1502,17 @@ boundary: {left : object/string right: object/string}
             return false;
         },
 
+        getPosition: function() {
+            return {
+                row: this.order,
+                agregator: this.parent.order
+            };
+        },
+
+        getIterator: function() {
+            return new ArrayIterator(this.blockList);
+        },
+
         /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
             return this.observerList.push(observer);
@@ -1468,17 +1530,6 @@ boundary: {left : object/string right: object/string}
                 var observer = observerIterator.next();
                 observer.update();
             }
-        },
-
-        getPosition: function() {
-            return {
-                row: this.order,
-                agregator: this.parent.order
-            };
-        },
-
-        getIterator: function() {
-            return new ArrayIterator(this.blockList);
         },
 
         // help function
@@ -1663,6 +1714,9 @@ boundary: {left : object/string right: object/string}
                 agregator: this.parent.parent.order
             };
         },
+        remove: function() {
+            this.parent.blockList.splice($.inArray(this, this.parent.blockList), 1);
+        },
 
         /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
@@ -1737,7 +1791,9 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
                 selectedBlock = blockIterator.next().getJquery();
-                selectedBlock.removeClass("selected");
+                if (selectedBlock) {
+                    selectedBlock.removeClass("selected");
+                }
             }
             this.selectedBlocks.length = 0;
         },
