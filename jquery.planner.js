@@ -222,6 +222,10 @@ boundary: {left : object/string right: object/string}
         },
 
         setBoundaries: function(boundary) {
+            if (!boundary) {
+                return;
+            }
+
             this.options.boundary.setLeft(DateUtils.convertToDate(boundary.left, this.options.dateFormat));
             this.options.boundary.setRight(DateUtils.convertToDate(boundary.right, this.options.dateFormat));
 
