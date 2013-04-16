@@ -71,20 +71,26 @@ boundary: {left : object/string right: object/string}
         options.showWeekends  = options.showWeekends  && true;         // false
         options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd";
         options.expandBodrer  = options.expandBorder  && true;         // false
+
         // calculabe options
         options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
 
         // set default baundaries
         var minDays = Math.floor(options.rowWidth()/options.cellWidth);
-        var left = new Date();
+        var left = new Date().clearTime();
         var right = left.clone().addDays(minDays);
         if (options.boundary && options.boundary.left) {
-            left = DateUtils.convertToDate(options.boundary.left, options.dateFormat);
+            left = DateUtils.convertToDate(options.boundary.left, options.dateFormat).clearTime();
         }
         if (options.boundary && options.boundary.right) {
-            right = DateUtils.convertToDate(options.boundary.right, options.dateFormat);
+            right = DateUtils.convertToDate(options.boundary.right, options.dateFormat).clearTime();
         }
         options.boundary = new Boundary(left, right, minDays);
+
+        // set frame begginging date
+        if (options.scrollToDate) {
+            options.scrollToDate = DateUtils.convertToDate(options.scrollToDate, options.dateFormat).clearTime();
+        }
 
         this.options = options;
         this.workbenchModel = new WorkbenchModel(options);
@@ -167,7 +173,7 @@ boundary: {left : object/string right: object/string}
 
             this.slideView.render();
         },
-        
+
         onClickOnDelete: function() {
             var blockIterator = this.workbenchModel.selectedBlocks.getIterator();
             var positionToUpdateList = []
@@ -177,7 +183,7 @@ boundary: {left : object/string right: object/string}
                 blockView.model.remove();
 
                 /*TODO: implement simple/unify deferred row updating mechanism
-                 * (the same thing for updateWithSelectedBlocks function) */ 
+                 * (the same thing for updateWithSelectedBlocks function) */
                 var positionPresented = false;
                 positionIterator = new ArrayIterator(positionToUpdateList);
                 while (positionIterator.hasNext()) {
@@ -190,13 +196,13 @@ boundary: {left : object/string right: object/string}
                     positionToUpdateList.push(position);
                 }
             }
-            
+
             positionIterator = new ArrayIterator(positionToUpdateList);
             while (positionIterator.hasNext()) {
                 position = positionIterator.next();
                 this.workbenchModel.updateRow(position);
             }
-            
+
             this.workbenchModel.selectedBlocks.empty();
         },
 
@@ -406,17 +412,20 @@ boundary: {left : object/string right: object/string}
                     "width": this.options.rowWidth() + "px"
                 }
             });
-
             this.setJquery(slideContainer);
 
             this.render();
+
+            if (this.options.scrollToDate) {
+                this.scrollToDate(this.options.scrollToDate);
+            }
         },
 
         render: function() {
             this.removeContent();
-
-            var hzHeader = new HzHeaderView(this.options, this.model);
-            var workbenchView = new WorkbenchView(this.options, this.model, hzHeader);
+            /* TODO: move GRID to a separete class to avoid hzHeader passing everywere s*/
+            this.hzHeader = new HzHeaderView(this.options, this.model);
+            var workbenchView = new WorkbenchView(this.options, this.model, this.hzHeader);
 
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
@@ -442,13 +451,16 @@ boundary: {left : object/string right: object/string}
                     }
                 });
 
-            this.contentArray.push(hzHeader);
             this.contentArray.push(workbenchView);
 
-            this.appendJquery(hzHeader);
+            this.appendJquery(this.hzHeader);
             this.ganttViewBody.append(workbenchView.getJquery());
             this.ganttViewBody.append(this.unavailableDiv);
             this.getJquery().append(this.ganttViewBody);
+        },
+        scrollToDate: function(date) {
+            // 500 - scroll speed
+            this.getJquery().animate({scrollLeft: this.hzHeader.getGrid().getPosByDate(date)}, 500);
         },
 
         removeContent: function() {
@@ -462,6 +474,10 @@ boundary: {left : object/string right: object/string}
             }
             if (this.ganttViewBody) {
                 this.ganttViewBody.remove();
+            }
+            if (this.hzHeader) {
+                this.hzHeader.removeContent();
+                this.hzHeader.destroyJquery();
             }
         }
     });
@@ -549,6 +565,14 @@ boundary: {left : object/string right: object/string}
                     }
                 }
                 return date;
+            },
+            grid.getPosByDate = function (date) {
+                for(var i=0; i < grid.length; i++) {
+                    if (date.compareTo(grid[i].date) < 0) {
+                        return grid[i].offset - grid.cellWidth;
+                    }
+                }
+                return grid[grid.length-1].offset;
             }
 
             return grid;
@@ -836,7 +860,7 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
-            
+
             /* TODO: fix duplicetion */
             var blockView = this.getBlockView($(e.currentTarget).data("position"));
             blockView.blockController.select();
@@ -1140,7 +1164,7 @@ boundary: {left : object/string right: object/string}
             /* TODO: add getter to model */
             var workbenchModel = this.blockModel.parent.parent.parent;
             workbenchModel.selectedBlocks.addBlock(this.blockView);
-            
+
             /* TODO: add getter to model */
             var agregatorModel = this.blockModel.parent.parent;
             var positionIterator = new ArrayIterator(this.blockModel.blockData.agregatedBlocks);
@@ -1580,7 +1604,7 @@ boundary: {left : object/string right: object/string}
 
                 correctArr.push(rowData[i]);
             }
-            /* TODO: ? remove verification ?*/ 
+            /* TODO: ? remove verification ?*/
             if (correctArr.length < 1) {
                 return correctArr;
             }

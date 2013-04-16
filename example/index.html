@@ -36,11 +36,12 @@
                     });
                 return;
             }
-            
+
             var chart = $("#chart").planner({
                                             width: 900,
                                             showWeekends: true,
                                             expandBorder: true,
+                                            scrollToDate: "2013-02-01",
                                         });
 
             chart.planner("setData", plannerData );
@@ -51,7 +52,7 @@
 
             /* Test external events handling */
             $("#chart").bind("planneronclickonzoomout", function(event, data) { console.log(data); });
-            
+
             $("#get_data").bind("click", function(event, data) {console.log(chart.planner("getData"));});
         });
 
