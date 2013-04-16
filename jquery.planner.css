@@ -96,7 +96,7 @@ div.planner-hzheader-day.planner-weekend {
 div.planner-vtheader {
     position: relative;
     z-index: 10;
-    width: 140px;
+    width: 200px;
     overflow: hidden;
     background-color: #fff;
     border-right: 1px solid #999;
@@ -112,7 +112,7 @@ div.planner-menu {
 }
 
 div.planner-vtheader-agregator {
-    padding-left: 12px;
+    padding-left: 8px;
     border-top: 1px solid #d0d0d0;
 }
 
@@ -127,6 +127,9 @@ div.planner-vtheader-row {
     padding-left: 12px;
     width: 100px;
     text-align: left;
+}
+div.planner-vtheader-agregator-name {
+    font: 10px sans-serif;
 }
 
 div.planner-menu {
