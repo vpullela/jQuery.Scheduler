@@ -1855,7 +1855,7 @@ boundary: {left : object/string right: object/string}
         },
 
         setRight: function(right) {
-            this.rigth = right;
+            this.right = right;
             this.calculateNumberOfDays();
         },
         getRight: function(adjusted) {
