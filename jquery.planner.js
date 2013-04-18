@@ -1126,8 +1126,13 @@ boundary: {left : object/string right: object/string}
             // TODO:: data method
             block.data("position", this.model.getPosition());
 
+            var notSolidNotificator = "";
+            if (this.model.parent.order == -1 && !this.model.isAgregationSolid()) {
+                notSolidNotificator = "*";
+            }
+
             // duration
-            var textBlock = $("<div>", { "class": "planner-block-text" }).text(size);
+            var textBlock = $("<div>", { "class": "planner-block-text" }).text(size + notSolidNotificator);
             textBlock.addClass("planner-nonselectable");
             block.append(textBlock);
 
@@ -1292,6 +1297,7 @@ boundary: {left : object/string right: object/string}
             agregator.updateAgregatedRow();
         },
         updateWithSelectedBlocks: function() {
+            /*TODO: rewrite updating mechanism */
             var blockListBuffer = {
                 rowList: [],
                 addBlockList: function(key, row) {
@@ -1718,6 +1724,14 @@ boundary: {left : object/string right: object/string}
         color: function() {
             return this.blockData.color;
         },
+        /* TODO: ? think about adding the AgregatorBlockModel class ? */
+        getAgregatedBlocks: function() {
+            if (this.blockData.agregatedBlocks) {
+                return this.blockData.agregatedBlocks;
+            } else {
+                return false;
+            }
+        },
         getBlockData: function() {
             return this.blockData;
         },
@@ -1745,7 +1759,40 @@ boundary: {left : object/string right: object/string}
         remove: function() {
             this.parent.blockList.splice($.inArray(this, this.parent.blockList), 1);
         },
+        /* TODO: ?new class ? AgregatedBlock method */
+        isAgregationSolid: function() {
+            var agregatedBlocks = this.getAgregatedBlocks();
 
+            if (!agregatedBlocks) {
+                return false;
+            }
+            
+            for (rowNum = 0; rowNum < this.parent.parent.rowList.length; rowNum++) { 
+                var positionIterator = new ArrayIterator(agregatedBlocks);
+                var positionInRow = false;
+                while (positionIterator.hasNext()) {
+                    var position = positionIterator.next();
+
+                    if (position.row == rowNum) {
+                        positionInRow = position;
+                    }
+                }
+
+                if (!positionInRow) {
+                    return false;
+                }
+                
+                var agregator = this.parent.parent;
+                var row = agregator.getRow(rowNum);
+                var block = row.getBlock(positionInRow.block);
+
+                if ( !this.start().equals(block.start()) || !this.end().equals(block.end()) ) {
+                    return false;
+                }
+            }
+            
+            return true;
+        },
         /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
             return this.observerList.push(observer);
