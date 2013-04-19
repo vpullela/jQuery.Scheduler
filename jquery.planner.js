@@ -141,7 +141,7 @@ boundary: {left : object/string right: object/string}
         },
 
         setEvents: function() {
-            /** TDOD: replase selectors */
+            /* TODO: replase selectors - use event function*/
             this.getJquery().delegate("div.planner-menu-item.zoomout",
                 "click",
                 $.proxy(this.onClickOnZoomOut, this));
@@ -175,35 +175,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onClickOnDelete: function() {
-            var blockIterator = this.workbenchModel.selectedBlocks.getIterator();
-            var positionToUpdateList = []
-            while (blockIterator.hasNext()) {
-                var blockView = blockIterator.next();
-                var position = blockView.getJquery().data('position');
-                blockView.model.remove();
-
-                /*TODO: implement simple/unify deferred row updating mechanism
-                 * (the same thing for updateWithSelectedBlocks function) */
-                var positionPresented = false;
-                positionIterator = new ArrayIterator(positionToUpdateList);
-                while (positionIterator.hasNext()) {
-                    positionToUpdate = positionIterator.next();
-                    if (positionToUpdate.agregator == position.agregator && positionToUpdate.row == position.row) {
-                        positionPresented = true;
-                    }
-                }
-                if (!positionPresented) {
-                    positionToUpdateList.push(position);
-                }
-            }
-
-            positionIterator = new ArrayIterator(positionToUpdateList);
-            while (positionIterator.hasNext()) {
-                position = positionIterator.next();
-                this.workbenchModel.updateRow(position);
-            }
-
-            this.workbenchModel.selectedBlocks.empty();
+            this.workbenchModel.deleteSelectedBlocks();
         },
 
         getData: function() {
@@ -391,7 +363,6 @@ boundary: {left : object/string right: object/string}
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
             this.getJquery().append(deleteSelected);
-
         }
     });
 
@@ -680,6 +651,9 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
+            this.blockMenuView = new BlockMenuView(this.options, new BlockMenuModel());
+            this.appendJquery(this.blockMenuView);
+
             var agregatorIterator = this.model.getIterator();
             while (agregatorIterator.hasNext()) {
                 var dataAgregator = agregatorIterator.next();
@@ -696,6 +670,10 @@ boundary: {left : object/string right: object/string}
                 this.destroyJquery();
                 this.stopObserveModel();
             });
+
+            if (this.blockMenuView) {
+                this.blockMenuView.destroyJquery();
+            }
 
             this.contentArray.length = 0;
         },
@@ -865,9 +843,13 @@ boundary: {left : object/string right: object/string}
         onClickOnBlock: function(e) {
             e.stopPropagation();
 
-            /* TODO: fix duplicetion */
             var blockView = this.getBlockView($(e.currentTarget).data("position"));
-            blockView.blockController.select();
+            if (e.ctrlKey == true) {
+                blockView.blockController.select();
+                return;
+            }
+
+            this.blockMenuView.showAt(blockView, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
         },
         onClickOnContainer: function(e) {
             if (!this.model.selectedBlocks.isEmpty()) {
@@ -1145,6 +1127,103 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
+     * BlockMenuView class
+     */
+    function BlockMenuView(options, model) {
+        this.options = options;
+        this.model = model;
+
+        this.content = [];
+
+        this._init();
+    }
+    BlockMenuView.prototype = Object.create(AbstractView.prototype);
+
+    $.extend(BlockMenuView.prototype, {
+        _init: function() {
+            var menu = $("<div>", {
+                "class" : "planner-block-menu",
+            });
+            this.setJquery(menu);
+
+            this.render();
+            this.setEvents();
+        },
+        render: function() {
+            var commandIterator = this.model.getIterator();
+            while (commandIterator.hasNext()) {
+                command = commandIterator.next();
+                var menuItem = new BlockMenuItemView(this.options, command);
+                this.appendJquery(menuItem);
+                this.content.push(menuItem);
+            }
+        },
+        setEvents: function() {
+            this.getJquery().bind("mouseleave", $.proxy(this.onMouseLeave, this));
+            this.getJquery().bind("click", $.proxy(this.onMouseLeave, this));
+        },
+        showAt: function(blockView, left, top) {
+            this.setBlockView(blockView);
+
+            this.getJquery().css({
+                "display" : "inline",
+                "left": left,
+                "top": top,
+            });
+        },
+        onMouseLeave: function() {
+            this.getJquery().css("display", "none");
+        },
+        setBlockView: function(blockView) {
+            var menuItemIterator = new ArrayIterator(this.content);
+            while(menuItemIterator.hasNext()) {
+                var menuItem = menuItemIterator.next();
+                menuItem.setBlockView(blockView);
+            }
+        }
+    });
+
+    /**
+     * BlockMenuItemView class
+     */
+    function BlockMenuItemView(options, command) {
+        this.options = options;
+        this.command = command;
+        this.blockView = undefined;
+
+        this._init();
+    }
+    BlockMenuItemView.prototype = Object.create(AbstractView.prototype);
+
+    $.extend(BlockMenuItemView.prototype, {
+        _init: function() {
+            var menu = $("<div>", {
+                "class" : "planner-block-menu-item",
+            }).text(this.command.getName());
+
+            this.setJquery(menu);
+            this.setEvents();
+        },
+        setBlockView: function(blockView) {
+            this.blockView = blockView;
+        },
+        setEvents: function() {
+            this.getJquery().bind("mouseover", $.proxy(this.onMouseOver, this));
+            this.getJquery().bind("mouseleave", $.proxy(this.onMouseLeave, this));
+            this.getJquery().bind("click", $.proxy(this.onClick, this));
+        },
+        onMouseOver: function() {
+            this.getJquery().addClass("selected");
+        },
+        onMouseLeave: function(e) {
+            this.getJquery().removeClass("selected");
+        },
+        onClick: function() {
+            this.command.execute(this.blockView);
+        }
+    });
+
+    /**
      * BlockController class
      */
     function BlockController(blockView, blockModel) {
@@ -1356,6 +1435,37 @@ boundary: {left : object/string right: object/string}
                 /*TODO:: remove agregator update dupliction */
                 agregator.updateAgregatedRow();
             }
+        },
+        deleteSelectedBlocks: function() {
+            var blockIterator = this.selectedBlocks.getIterator();
+            var positionToUpdateList = []
+            while (blockIterator.hasNext()) {
+                var blockView = blockIterator.next();
+                var position = blockView.getJquery().data('position');
+                blockView.model.remove();
+
+                /*TODO: implement simple/unify deferred row updating mechanism
+                 * (the same thing for updateWithSelectedBlocks function) */
+                var positionPresented = false;
+                positionIterator = new ArrayIterator(positionToUpdateList);
+                while (positionIterator.hasNext()) {
+                    positionToUpdate = positionIterator.next();
+                    if (positionToUpdate.agregator == position.agregator && positionToUpdate.row == position.row) {
+                        positionPresented = true;
+                    }
+                }
+                if (!positionPresented) {
+                    positionToUpdateList.push(position);
+                }
+            }
+
+            positionIterator = new ArrayIterator(positionToUpdateList);
+            while (positionIterator.hasNext()) {
+                position = positionIterator.next();
+                this.updateRow(position);
+            }
+
+            this.selectedBlocks.empty();
         },
 
         getNumberOfRows: function() {
@@ -1766,8 +1876,8 @@ boundary: {left : object/string right: object/string}
             if (!agregatedBlocks) {
                 return false;
             }
-            
-            for (rowNum = 0; rowNum < this.parent.parent.rowList.length; rowNum++) { 
+
+            for (rowNum = 0; rowNum < this.parent.parent.rowList.length; rowNum++) {
                 var positionIterator = new ArrayIterator(agregatedBlocks);
                 var positionInRow = false;
                 while (positionIterator.hasNext()) {
@@ -1781,7 +1891,7 @@ boundary: {left : object/string right: object/string}
                 if (!positionInRow) {
                     return false;
                 }
-                
+
                 var agregator = this.parent.parent;
                 var row = agregator.getRow(rowNum);
                 var block = row.getBlock(positionInRow.block);
@@ -1790,7 +1900,7 @@ boundary: {left : object/string right: object/string}
                     return false;
                 }
             }
-            
+
             return true;
         },
         /* TODO: move to abstract model (create AbstractModel)*/
@@ -1810,6 +1920,50 @@ boundary: {left : object/string right: object/string}
                 var observer = observerIterator.next();
                 observer.update();
             }
+        },
+    });
+
+    /**
+     * BlockMenuModel class
+     */
+    function BlockMenuModel() {
+        this.commandList = [];
+
+        this.addDefaultComands();
+    }
+    $.extend(BlockMenuModel.prototype, {
+        addDefaultComands: function() {
+            this.addCommand(new CommandModel("select", function(blockView) {
+                blockView.blockController.select();
+            }));
+
+            this.addCommand(new CommandModel("delete", function(blockView) {
+                blockView.blockController.select();
+                var workbenchModel = blockView.model.parent.parent.parent;
+                workbenchModel.deleteSelectedBlocks();
+            }));
+        },
+        addCommand: function(command) {
+            this.commandList.push(command);
+        },
+        getIterator: function() {
+            return new ArrayIterator(this.commandList);
+        }
+    });
+
+    /**
+     * CommandModel class
+     */
+    function CommandModel(name, callback) {
+        this.name = name;
+        this.callback = callback;
+    }
+    $.extend(CommandModel.prototype, {
+        getName: function() {
+            return this.name;
+        },
+        execute: function(blockView) {
+            this.callback(blockView);
         },
     });
 
