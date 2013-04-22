@@ -722,33 +722,10 @@ boundary: {left : object/string right: object/string}
 
         onResizeBlockStart: function(e, ui) {
             var resizedBlock = ui.helper;
-            resizedBlock.css("position", "relative"); // revert default position
 
             /* TODO: fix duplication */
             var blockView = this.getBlockView(resizedBlock.data("position"));
             blockView.blockController.select();
-
-            var blockIterator = this.model.selectedBlocks.getIterator();
-            while (blockIterator.hasNext()) {
-                var block = blockIterator.next().getJquery();
-
-                block.after($("<div>", {
-                    "css": {
-                        "display": "inline-block",
-                        "position": "relative",
-                        "border" : "1px solid transparent",
-                        "width": block.css("width"),
-                        "margin-left": block.css("margin-left"),
-                        "margin-right": block.css("margin-right")
-                    }
-                }));
-
-                block.css({
-                    position: "absolute",
-                    top: block.position().top,
-                    left: block.position().left,
-                });
-            }
 
             this.resizedWidth = resizedBlock.width() - 2;
             this.resizedLeft = resizedBlock.position().left;
@@ -787,10 +764,10 @@ boundary: {left : object/string right: object/string}
         onResizeBlockStop: function(e, ui) {
             /* TODO: ?duplication onDragBlockStop */
             var grid = this.hzHeader.getGrid();
+
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next().getJquery();
-                block.next().remove();
                 block.data("interval", this.calculateDates(block, grid));
             }
 
@@ -1089,7 +1066,7 @@ boundary: {left : object/string right: object/string}
 
             var cellHeight = this.options.cellHeight;
             var size = DateUtils.daysBetween(this.model.start(), this.model.end()) + 1;
-            var offset = DateUtils.daysBetween(this.model.getPreviousBlockEnd(), this.model.start());
+            var offset = DateUtils.daysBetween(this.options.boundary.getLeft(), this.model.start());
 
             var block = $("<div>", {
                 "class": "planner-block",
@@ -1609,11 +1586,10 @@ boundary: {left : object/string right: object/string}
             }
 
             this.blockList = [];
-            var previousBlockEnd = this.parent.options.boundary.getLeft(); // first day in row
+
             for (blockNum in blockList) {
-                var block = new BlockModel(this, blockNum, blockList[blockNum], previousBlockEnd);
+                var block = new BlockModel(this, blockNum, blockList[blockNum]);
                 this.blockList.push(block);
-                previousBlockEnd = block.end().clone().addDays(1);
             }
         },
         getBlockList: function() {
@@ -1808,7 +1784,7 @@ boundary: {left : object/string right: object/string}
     /**
      * BlockModel class
      */
-    function BlockModel(parent, blockNum, blockData, previousBlockEnd) {
+    function BlockModel(parent, blockNum, blockData) {
         this.parent = parent;
         /* TODO: add getter to model */
         this.options = this.parent.parent.parent.options;
@@ -1816,8 +1792,6 @@ boundary: {left : object/string right: object/string}
         this.blockData = blockData;
 
         this.observerList = [];
-        /* first day in row if not set */
-        this.previousBlockEnd = previousBlockEnd || this.parent.parent.options.boundary.getLeft();
 
         /* HACK: set an agregator color */
         if (this.parent.isAgregatorRow) {
@@ -1854,9 +1828,6 @@ boundary: {left : object/string right: object/string}
         },
         setBlockData: function(blockData) {
             this.blockData = blockData;
-        },
-        getPreviousBlockEnd: function() {
-            return this.previousBlockEnd;
         },
 
         getPosition: function() {
