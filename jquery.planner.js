@@ -1329,7 +1329,9 @@ boundary: {left : object/string right: object/string}
                 while (rowIterator.hasNext()) {
                     var row = rowIterator.next();
                     var blockList = row.getBlockList();
-
+                    blockData.start = blockData.start.clone();
+                    blockData.end = blockData.end.clone();
+                    
                     blockList.push(blockData);
                     row.setBlockList(blockList);
                     row.notifyObservers();
