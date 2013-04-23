@@ -748,14 +748,10 @@ boundary: {left : object/string right: object/string}
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
 
-                if (left == 0 && diff > 0) {
-                    blockModel.resizeRight(1);
-                } else if (left == 0 && diff < 0) {
-                    blockModel.resizeRight(-1);
-                } else if (left < 0 && diff > 0) {
-                    blockModel.resizeLeft(-1)
-                } else if (left > 0 && diff < 0) {
-                    blockModel.resizeLeft(1);
+                if (left == 0 && diff != 0) {
+                    blockModel.resizeRight(diff / this.options.cellWidth);
+                } else if (left != 0 && diff != 0) {
+                    blockModel.resizeLeft((-1) * diff / this.options.cellWidth)
                 }
                 
                 if (blockModel != resizedBlockView.model) { 
@@ -783,14 +779,12 @@ boundary: {left : object/string right: object/string}
             }
 
             if (blockLeft != ui.position.left) {
+                var numberOfDays = (ui.position.left - blockLeft) / this.options.cellWidth;
+
                 var blockIterator = this.model.selectedBlocks.getIterator();
                 while (blockIterator.hasNext()) {
                     var blockModel = blockIterator.next();
-                    if (blockLeft < ui.position.left) {
-                        blockModel.drag(1);
-                    } else {
-                        blockModel.drag(-1);
-                    }
+                    blockModel.drag(numberOfDays);
                     
                     if (blockModel != draggedBlockView.model) {
                         blockModel.notifyObservers();
@@ -1247,7 +1241,6 @@ boundary: {left : object/string right: object/string}
 
                 workbenchModel.selectedBlocks.addBlock(blockModel);
             }
-            console.log(workbenchModel.selectedBlocks);
         }
     });
 
@@ -1349,35 +1342,25 @@ boundary: {left : object/string right: object/string}
             agregator.updateAgregatedRow();
         },
         updateSelectedBlocks: function() {
-            var selectedBlockIterator = this.selectedBlocks.getIterator();
-            while (selectedBlockIterator.hasNext()) {
-                selectedBlockModel = selectedBlockIterator.next();
-
-                /* TODO: deleteSelectedBloks duplication */
-                var row = selectedBlockModel.parent;
-                /* TODO: remove row update dupliction */
-                row.setBlockList(row.getBlockList());
-                row.notifyObservers();
-                /*TODO:: remove agregator update dupliction */
-                row.parent.updateAgregatedRow();
-            }
+            this.update();
             this.selectedBlocks.empty();
         },
         deleteSelectedBlocks: function() {
+            var rowsToUpdate = [];
             var blockIterator = this.selectedBlocks.getIterator();
-            var positionToUpdateList = []
             while (blockIterator.hasNext()) {
                 var selectedBlockModel = blockIterator.next();
                 selectedBlockModel.remove();
-
-                var row = selectedBlockModel.parent;
-                /* TODO: remove row update dupliction */
-                row.setBlockList(row.getBlockList());
-                row.notifyObservers();
-                /*TODO:: remove agregator update dupliction */
-                row.parent.updateAgregatedRow();
             }
+            this.update();
             this.selectedBlocks.empty();
+        },
+        update: function() {
+            var agregatorIterator = this.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var agregator = agregatorIterator.next();
+                agregator.update();
+            }
         },
 
         getNumberOfRows: function() {
@@ -1396,7 +1379,7 @@ boundary: {left : object/string right: object/string}
         this.parent = parent;
         this.options = this.parent.options;
         this.order = order;
-
+        
         this.rowList = [];
         this.agregatedRow = new RowModel(this, -1, {}, []);
 
@@ -1467,6 +1450,21 @@ boundary: {left : object/string right: object/string}
             }
             return 1;
         },
+        update: function() {
+            var needToUpdate = false
+            var rowIterator = this.getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next(); 
+                if (row.needToUpdate) {
+                    row.update();
+                    needToUpdate = true;
+                }
+            }
+            
+            if (needToUpdate) {
+                this.updateAgregatedRow();
+            }
+        },
 
         /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
@@ -1499,6 +1497,8 @@ boundary: {left : object/string right: object/string}
     function RowModel(parent, rowNum, metadata, blockList) {
         this.parent = parent;
         this.order = rowNum;
+
+        this.needToUpdate = false;
 
         this.options = this.parent.parent.options;
 
@@ -1562,6 +1562,12 @@ boundary: {left : object/string right: object/string}
                 row: this.order,
                 agregator: this.parent.order
             };
+        },
+
+        update: function() {
+            this.setBlockList(this.getBlockList());
+            this.notifyObservers();
+            this.needToUpdate = false;
         },
 
         getIterator: function() {
@@ -1775,9 +1781,33 @@ boundary: {left : object/string right: object/string}
                 agregator: this.parent.parent.order
             };
         },
-        remove: function() {
-            this.parent.blockList.splice($.inArray(this, this.parent.blockList), 1);
+
+        resizeLeft: function(days) {
+            this.start().addDays(days);
+            this.parent.needToUpdate = true;
         },
+        resizeRight: function(days) {
+            this.end().addDays(days);
+            this.parent.needToUpdate = true;
+        },
+        drag: function(days) {
+            this.resizeLeft(days);
+            this.resizeRight(days);
+        },
+        select: function() {
+            this.selected = true;
+            this.notifyObservers();
+        },
+        unselect: function() {
+            this.selected = false;
+            this.notifyObservers();
+        }, 
+        remove: function() {
+            /* TODO: ? move the metod to RowModel ?*/ 
+            this.parent.blockList.splice($.inArray(this, this.parent.blockList), 1);
+            this.parent.needToUpdate = true;
+        },
+
         /* TODO: ?new class ? AgregatedBlock method */
         isAgregationSolid: function() {
             var agregatedBlocks = this.getAgregatedBlocks();
@@ -1812,24 +1842,6 @@ boundary: {left : object/string right: object/string}
 
             return true;
         },
-        resizeLeft: function(days) {
-            this.start().addDays(days);
-        },
-        resizeRight: function(days) {
-            this.end().addDays(days);
-        },
-        drag: function(days) {
-            this.resizeLeft(days);
-            this.resizeRight(days);
-        },
-        select: function() {
-            this.selected = true;
-            this.notifyObservers();
-        },
-        unselect: function() {
-            this.selected = false;
-            this.notifyObservers();
-        }, 
         /* TODO: move to abstract model (create AbstractModel)*/
         addObserver: function(observer) {
             return this.observerList.push(observer);
