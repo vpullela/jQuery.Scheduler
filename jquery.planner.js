@@ -620,8 +620,6 @@ boundary: {left : object/string right: object/string}
         this.contentArray = [];
 
         this.isBlocksDragged = false;
-        this.resizedWidth = 0;
-        this.resizedLeft = 0;
 
         this._init();
     }
@@ -721,40 +719,19 @@ boundary: {left : object/string right: object/string}
         },
 
         onResizeBlockStart: function(e, ui) {
-            var resizedBlock = ui.helper;
-
-            /* TODO: fix duplication */
-            var blockView = this.getBlockView(resizedBlock.data("position"));
+            // select block on resizexs 
+            var blockView = this.getBlockView(ui.helper.data("position"));
             blockView.blockController.select();
-
-            this.resizedWidth = resizedBlock.width() - 2;
-            this.resizedLeft = resizedBlock.position().left;
         },
         onResizeBlock: function(e, ui) {
-            var resizedBlock = ui.helper;
-
-            var diff = resizedBlock.width() - this.resizedWidth;
-            var left = resizedBlock.position().left- this.resizedLeft;
-
-            this.resizedWidth = resizedBlock.width();
-            this.resizedLeft = resizedBlock.position().left;
-
-            if (diff == 0) {
-                return;
-            }
-
-            var resizedBlockView = this.getBlockView(resizedBlock.data("position"));
+            /* TODO: duplication onDragBlock */
+            var resizedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-
-                if (left == 0 && diff != 0) {
-                    blockModel.resizeRight(diff / this.options.cellWidth);
-                } else if (left != 0 && diff != 0) {
-                    blockModel.resizeLeft((-1) * diff / this.options.cellWidth)
-                }
+                blockModel.resize(ui.helper.position().left, ui.helper.width());
                 
-                if (blockModel != resizedBlockView.model) { 
+                if (blockModel != resizedBlockModel) {
                     blockModel.notifyObservers();
                 }
             }
@@ -764,31 +741,24 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            /* EMPTY */
         },
         onDragBlock: function(e, ui) {
-            var draggedBlock = ui.helper;
-            var blockLeft = parseInt(draggedBlock.css("left"), 10) || 0;
-            /* TODO: fix duplication onResize and onClick */
-            var draggedBlockView = this.getBlockView(draggedBlock.data("position"));
-
-            if (!this.isBlocksDragged && blockLeft != ui.position.left) {
+            // select block on horisontal drag 
+            if (!this.isBlocksDragged && ui.helper.position().left != ui.position.left) {
                 this.isBlocksDragged = true;
-
+                var draggedBlockView = this.getBlockView(ui.helper.data("position"));
                 draggedBlockView.blockController.select();
             }
-
-            if (blockLeft != ui.position.left) {
-                var numberOfDays = (ui.position.left - blockLeft) / this.options.cellWidth;
-
-                var blockIterator = this.model.selectedBlocks.getIterator();
-                while (blockIterator.hasNext()) {
-                    var blockModel = blockIterator.next();
-                    blockModel.drag(numberOfDays);
-                    
-                    if (blockModel != draggedBlockView.model) {
-                        blockModel.notifyObservers();
-                    }
+            
+            /* TODO: duplication onResizeBlock */
+            var resizedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            var blockIterator = this.model.selectedBlocks.getIterator();
+            while (blockIterator.hasNext()) {
+                var blockModel = blockIterator.next();
+                blockModel.resize(ui.helper.position().left, ui.helper.width());
+                
+                if (blockModel != resizedBlockModel) {
+                    blockModel.notifyObservers();
                 }
             }
         },
@@ -1313,7 +1283,12 @@ boundary: {left : object/string right: object/string}
         getAgregator: function(order) {
             return this.data[order];
         },
-
+        getBlockByPosition: function(position) {
+            var agregator = this.getAgregator(position.agregator);
+            var row = agregator.getRow(position.row);
+            var block = row.getBlock(position.block);
+            return block;
+        },
         addBlock: function(position, blockData) {
             var agregator = this.getAgregator(position.agregator);
             /*TODO: optimize if statement */
@@ -1733,6 +1708,9 @@ boundary: {left : object/string right: object/string}
         this.blockData = blockData;
 
         this.selected = false;
+        
+        this.left = 0;
+        this.width = 0;
 
         this.observerList = [];
 
@@ -1780,6 +1758,31 @@ boundary: {left : object/string right: object/string}
                 row: this.parent.order,
                 agregator: this.parent.parent.order
             };
+        },
+
+        resize: function(left, width) {
+            var deltaWidth = this.width ? width - this.width : this.width;
+            var deltaLeft = left - this.left;
+
+            this.width = width;
+            this.left = left;
+
+            if (deltaWidth == 0 && deltaLeft != 0)
+            {
+                this.drag(deltaLeft / this.options.cellWidth);
+            }
+            else if (deltaWidth != 0 && deltaLeft == 0 )
+            {
+                this.resizeRight(deltaWidth / this.options.cellWidth);
+            }
+            else if (deltaWidth != 0 && deltaLeft != 0)
+            {
+                this.resizeLeft((-1) * deltaWidth / this.options.cellWidth)
+            }
+        },
+        stopResize: function() {
+            this.resizedWidth = 0;
+            this.resizedLeft = 0;
         },
 
         resizeLeft: function(days) {
