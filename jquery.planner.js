@@ -30,6 +30,10 @@ boundary: {left : object/string right: object/string}
         getData: function() {
             return this.chartView.getData();
         },
+        
+        addBlockCommand: function(name, callback) {
+            this.chartView.addBlockCommand(name, callback);
+        },
 
         _setOption: function (name, value) {
             if (name === "width") {
@@ -191,6 +195,10 @@ boundary: {left : object/string right: object/string}
             this.options.width = width;
 
             this.render();
+        },
+
+        addBlockCommand: function(name, callback) {
+            this.workbenchModel.blockMenuModel.addCommand(new CommandModel(name, callback));
         },
 
         setBoundaries: function(boundary) {
@@ -649,7 +657,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            this.blockMenuView = new BlockMenuView(this.options, new BlockMenuModel());
+            this.blockMenuView = new BlockMenuView(this.options, this.model.blockMenuModel);
             this.appendJquery(this.blockMenuView);
 
             var agregatorIterator = this.model.getIterator();
@@ -1055,6 +1063,8 @@ boundary: {left : object/string right: object/string}
             this.setEvents();
         },
         render: function() {
+            /*TODO: add removeContent function */
+            this.getJquery().empty();
             var commandIterator = this.model.getIterator();
             while (commandIterator.hasNext()) {
                 command = commandIterator.next();
@@ -1068,6 +1078,8 @@ boundary: {left : object/string right: object/string}
             this.getJquery().bind("click", $.proxy(this.onMouseLeave, this));
         },
         showAt: function(blockModel, left, top) {
+            /* TODO: optimize rerendering using notification */
+            this.render();
             this.setBlockModel(blockModel);
 
             this.getJquery().css({
@@ -1129,26 +1141,13 @@ boundary: {left : object/string right: object/string}
     });
     
     /**
-     * BlockEditView class
-     */
-    function BlockEditView() {
-        this._init();
-    }
-    BlockEditView.prototype = Object.create(AbstractView.prototype);
-
-    $.extend(BlockEditView.prototype, {
-        _init: function() {
-            alert("in process");
-        }
-    });
-
-    /**
      * WorkbenchModel class
      */
     function WorkbenchModel(options) {
         this.options = options;
         this.data = [];
 
+        this.blockMenuModel = new BlockMenuModel();
         this.selectedBlocks = new SelectedBlocks();
     }
 
@@ -1931,10 +1930,6 @@ boundary: {left : object/string right: object/string}
                 blockModel.select();
                 var workbenchModel = blockModel.parent.parent.parent;
                 workbenchModel.deleteSelectedBlocks();
-            }));
-            
-            this.addCommand(new CommandModel("edit", function(blockModel) {
-                new BlockEditView();
             }));
         },
         addCommand: function(command) {
