@@ -1664,7 +1664,30 @@ boundary: {left : object/string right: object/string}
         setBlockData: function(blockData) {
             this.blockData = blockData;
         },
+        getAgregatorBlock: function() {
+            if (this.parent.order == -1) {
+                return false;
+            }
+            
+            var agregator = this.parent.parent;
 
+            agregatorBlockIterator = agregator.agregatedRow.getIterator();
+            while (agregatorBlockIterator.hasNext()) {
+                agregatorBlock = agregatorBlockIterator.next();
+                agregatedBlockList = agregatorBlock.getAgregatedBlocks();
+                
+                positionIterator = new ArrayIterator(agregatedBlockList);
+                while (positionIterator.hasNext()) {
+                    position = positionIterator.next();
+                    
+                    if (position.row == this.parent.order && position.block == this.order) {
+                        return agregatorBlock;
+                    }
+                }
+            }
+            
+            return false;
+        },
         getPosition: function() {
             return {
                 block: this.order,
@@ -1699,16 +1722,94 @@ boundary: {left : object/string right: object/string}
         },
 
         resizeLeft: function(days) {
+            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
+                this.blockData.start = this.options.boundary.left.clone();
+                this.parent.needToUpdate = true;
+                return;
+            }
+            
+            if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
+
+                // merge to agregator block borders
+                /* TODO: 
+                 * duplication
+                 * getAgregatorBlock can be optimized
+                 * optimize comparation
+                 */
+                var agregatorBlock = this.getAgregatorBlock();
+                if (agregatorBlock) {
+                    /* TODO: optimize comparation */
+                    if (this.end().clone().addDays(days).compareTo(agregatorBlock.end()) <= 0) {
+                        this.end().addDays(days);
+                    } else {
+                        this.blockData.end = agregatorBlock.end().clone();
+                    }
+                    
+                    if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
+                        this.blockData.start = this.end().clone();
+                        this.parent.needToUpdate = true;
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            }
+
             this.start().addDays(days);
             this.parent.needToUpdate = true;
         },
         resizeRight: function(days) {
+            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
+                this.blockData.end = this.options.boundary.right.clone();
+                this.parent.needToUpdate = true;
+                return;
+            }
+            
+            if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
+
+                // merge to agregator block borders
+                /* TODO: 
+                 * duplication
+                 * getAgregatorBlock can be optimized
+                 * optimize comparation
+                 */
+                var agregatorBlock = this.getAgregatorBlock();
+                if (agregatorBlock) {
+                    if (this.start().clone().addDays(days).compareTo(agregatorBlock.start()) >= 0) {
+                        this.start().addDays(days);
+                    } else {
+                        this.blockData.start = agregatorBlock.start().clone();
+                    }
+                    
+                    if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
+                        this.blockData.end = this.start().clone();
+                        this.parent.needToUpdate = true;
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            }
+            
             this.end().addDays(days);
             this.parent.needToUpdate = true;
         },
         drag: function(days) {
-            this.resizeLeft(days);
-            this.resizeRight(days);
+            /* TODO: optimize date comparation */
+            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
+                this.blockData.start = this.options.boundary.left.clone();
+                this.parent.needToUpdate = true;
+                return;
+            }
+            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
+                this.blockData.end = this.options.boundary.right.clone();
+                this.parent.needToUpdate = true;
+                return;
+            }
+            
+            this.start().addDays(days);
+            this.end().addDays(days);
+            this.parent.needToUpdate = true;
         },
         select: function() {
             /* TODO: add getter to model */
