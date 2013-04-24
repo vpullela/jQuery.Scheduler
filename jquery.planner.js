@@ -1127,6 +1127,20 @@ boundary: {left : object/string right: object/string}
             this.command.execute(this.blockModel);
         }
     });
+    
+    /**
+     * BlockEditView class
+     */
+    function BlockEditView() {
+        this._init();
+    }
+    BlockEditView.prototype = Object.create(AbstractView.prototype);
+
+    $.extend(BlockEditView.prototype, {
+        _init: function() {
+            alert("in process");
+        }
+    });
 
     /**
      * WorkbenchModel class
@@ -1806,7 +1820,7 @@ boundary: {left : object/string right: object/string}
                 this.parent.needToUpdate = true;
                 return;
             }
-            
+
             this.start().addDays(days);
             this.end().addDays(days);
             this.parent.needToUpdate = true;
@@ -1920,7 +1934,7 @@ boundary: {left : object/string right: object/string}
             }));
             
             this.addCommand(new CommandModel("edit", function(blockModel) {
-                blockModel.getAgregator();
+                new BlockEditView();
             }));
         },
         addCommand: function(command) {
