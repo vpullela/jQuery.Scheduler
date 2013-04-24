@@ -532,14 +532,14 @@ boundary: {left : object/string right: object/string}
                     shift = shift/2;
                 }
 
-                var date = grid[grid.length-1].date;
+                var date = grid[grid.length-1].date.clone();
                 for(var i=0; i < grid.length; i++) {
                     if (grid[i].offset + shift > posX) {
-                        date = grid[i].date;
+                        date = grid[i].date.clone();
                         break;
                     }
                 }
-                return date;
+                return date.clone();
             },
             grid.getPosByDate = function (date) {
                 for(var i=0; i < grid.length; i++) {
