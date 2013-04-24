@@ -780,7 +780,7 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            this.blockMenuView.showAt(blockView, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+            this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
         },
         onClickOnContainer: function(e) {
             if (!this.model.selectedBlocks.isEmpty()) {
@@ -1067,8 +1067,8 @@ boundary: {left : object/string right: object/string}
             this.getJquery().bind("mouseleave", $.proxy(this.onMouseLeave, this));
             this.getJquery().bind("click", $.proxy(this.onMouseLeave, this));
         },
-        showAt: function(blockView, left, top) {
-            this.setBlockView(blockView);
+        showAt: function(blockModel, left, top) {
+            this.setBlockModel(blockModel);
 
             this.getJquery().css({
                 "display" : "inline",
@@ -1079,11 +1079,11 @@ boundary: {left : object/string right: object/string}
         onMouseLeave: function() {
             this.getJquery().css("display", "none");
         },
-        setBlockView: function(blockView) {
+        setBlockModel: function(blockModel) {
             var menuItemIterator = new ArrayIterator(this.content);
             while(menuItemIterator.hasNext()) {
                 var menuItem = menuItemIterator.next();
-                menuItem.setBlockView(blockView);
+                menuItem.setBlockView(blockModel);
             }
         }
     });
@@ -1094,7 +1094,7 @@ boundary: {left : object/string right: object/string}
     function BlockMenuItemView(options, command) {
         this.options = options;
         this.command = command;
-        this.blockView = undefined;
+        this.blockModel = undefined;
 
         this._init();
     }
@@ -1109,8 +1109,8 @@ boundary: {left : object/string right: object/string}
             this.setJquery(menu);
             this.setEvents();
         },
-        setBlockView: function(blockView) {
-            this.blockView = blockView;
+        setBlockView: function(blockModel) {
+            this.blockModel = blockModel;
         },
         setEvents: function() {
             this.getJquery().bind("mouseover", $.proxy(this.onMouseOver, this));
@@ -1124,7 +1124,7 @@ boundary: {left : object/string right: object/string}
             this.getJquery().removeClass("selected");
         },
         onClick: function() {
-            this.command.execute(this.blockView);
+            this.command.execute(this.blockModel);
         }
     });
 
@@ -1808,18 +1808,18 @@ boundary: {left : object/string right: object/string}
     }
     $.extend(BlockMenuModel.prototype, {
         addDefaultComands: function() {
-            this.addCommand(new CommandModel("select", function(blockView) {
-                blockView.blockController.select();
+            this.addCommand(new CommandModel("select", function(blockModel) {
+                blockModel.select();
             }));
 
-            this.addCommand(new CommandModel("delete", function(blockView) {
-                blockView.blockController.select();
-                var workbenchModel = blockView.model.parent.parent.parent;
+            this.addCommand(new CommandModel("delete", function(blockModel) {
+                blockModel.select();
+                var workbenchModel = blockModel.parent.parent.parent;
                 workbenchModel.deleteSelectedBlocks();
             }));
             
-            this.addCommand(new CommandModel("edit", function(blockView) {
-                blockView.render();
+            this.addCommand(new CommandModel("edit", function(blockModel) {
+                blockModel.getAgregator();
             }));
         },
         addCommand: function(command) {
@@ -1841,8 +1841,8 @@ boundary: {left : object/string right: object/string}
         getName: function() {
             return this.name;
         },
-        execute: function(blockView) {
-            this.callback(blockView);
+        execute: function(blockModel) {
+            this.callback(blockModel);
         },
     });
 
