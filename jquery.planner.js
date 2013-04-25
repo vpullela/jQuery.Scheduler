@@ -1470,7 +1470,11 @@ boundary: {left : object/string right: object/string}
             this.notifyObservers();
             this.needToUpdate = false;
         },
-
+        
+        getAgregator: function() {
+            return this.parent;
+        },
+        
         getIterator: function() {
             return new ArrayIterator(this.blockList);
         },
@@ -1746,6 +1750,9 @@ boundary: {left : object/string right: object/string}
             }
             
             return false;
+        },
+        getRow: function() {
+            return this.parent;
         },
         getPosition: function() {
             return {
