@@ -1649,8 +1649,54 @@ boundary: {left : object/string right: object/string}
         start: function() {
             return this.blockData.start;
         },
+        setStart: function(date, format) {
+            /*TODO: 
+             * duplication isAgregatorSolid, setEnd
+             * agregatorBlock functionality need to create a class
+             */
+            if (this.parent.order == -1) {
+                var positionIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (positionIterator.hasNext()) {
+                    position = positionIterator.next();
+                    var agregator = this.parent.parent;
+                    var row = agregator.getRow(position.row);
+                    var block = row.getBlock(position.block);
+                    
+                    block.setStart(date, format);
+                }
+            }
+            
+            if (!format) {
+                format = options.dateFormat;
+            }
+            this.blockData.start = DateUtils.convertToDate(date, format).clearTime();
+            this.parent.needToUpdate = true;
+        },
         end: function() {
             return this.blockData.end;
+        },
+        setEnd: function(date, format) {
+            /*TODO: 
+             * duplication isAgregatorSolid, setStart
+             * agregatorBlock functionality need to create a class
+             */
+            if (this.parent.order == -1) {
+                var positionIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (positionIterator.hasNext()) {
+                    position = positionIterator.next();
+                    var agregator = this.parent.parent;
+                    var row = agregator.getRow(position.row);
+                    var block = row.getBlock(position.block);
+                    
+                    block.setEnd(date, format);
+                }
+            }
+            
+            if (!format) {
+                format = options.dateFormat;
+            }
+            this.blockData.end = DateUtils.convertToDate(date, format).clearTime();
+            this.parent.needToUpdate = true;
         },
         color: function() {
             return this.blockData.color;
