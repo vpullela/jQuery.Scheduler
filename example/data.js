@@ -4,7 +4,7 @@ var plannerData = [
         data: [
             {
                 metadata: { name: "Sub 1" },
-                data: [{ start: "2013-01-03", end: "2013-01-05" }, { start: "2013-01-08", end: "2013-01-10" }]
+                data: [{ start: "2013-01-03", end: "2013-01-05" }, { start: "2013-01-08", end: "2013-01-10" }, { start: "2013-01-09", end: "2013-01-12" }]
             },
             {
                 metadata: { name: "Sub 2" },

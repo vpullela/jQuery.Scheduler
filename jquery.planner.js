@@ -1299,18 +1299,7 @@ boundary: {left : object/string right: object/string}
             return this.agregatedRow;
         },
         updateAgregatedRow: function() {
-            var blockList = [];
-            var rowIterator = this.getIterator();
-            while (rowIterator.hasNext()) {
-                var rowModel = rowIterator.next();
-                var blockIterator = rowModel.getIterator();
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    blockList.push({start: block.start().clone(), end: block.end().clone(), position: block.getPosition()});
-                }
-            }
-
-            this.agregatedRow.setBlockList(blockList);
+            this.agregatedRow.agregateBlocks();
             this.agregatedRow.notifyObservers();
         },
         toggle: function() {
@@ -1322,6 +1311,7 @@ boundary: {left : object/string right: object/string}
             var blockList = []
             for (rowNum in data) {
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
+                row.mergeBlocks();
                 this.rowList.push(row);
             }
             this.updateAgregatedRow();
@@ -1414,12 +1404,8 @@ boundary: {left : object/string right: object/string}
     }
     $.extend(RowModel.prototype, {
         setBlockList: function(blockList) {
-            if (this.isAgregatorRow) {
-                blockList = this.mergeCrossedBlocks(blockList);
-            } else {
-                blockList = $.extend(true, [], blockList);
-                blockList = this.prepareRowData(blockList);
-            }
+            blockList = $.extend(true, [], blockList);
+            blockList = this.prepareRowData(blockList);
 
             this.blockList = [];
 
@@ -1560,12 +1546,96 @@ boundary: {left : object/string right: object/string}
                     this.options.boundary.setRight(this.parent.maxDate);
                 }
             }
+            return correctArr;
+            
             /* merge crossed intervals */
             var mergedArr = this.mergeCrossedBlocks(correctArr);
             return mergedArr;
         },
+        mergeBlocks: function() {
+            this.blockList = this.sortBlockList(this.blockList);
+            
+            var block = false;
+            var nextBlock = false;
+
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                if (!block) {
+                    block = blockIterator.next();
+                }
+
+                if (blockIterator.hasNext()) {
+                    nextBlock = blockIterator.next();
+                } else {
+                    break;
+                }
+                
+                if (block.end().compareTo(nextBlock.end()) >= 0) {
+                    nextBlock.remove();
+                }
+                else if (block.end().clone().addDays(1).compareTo(nextBlock.start()) >= 0) {
+                    block.setEnd(nextBlock.end());
+                    nextBlock.remove();
+                }
+                else {
+                    block = nextBlock;
+                } 
+            } 
+        },
+        agregateBlocks: function() {
+            var newBlockList = [];
+            var rowIterator = this.getAgregator().getIterator();
+            while (rowIterator.hasNext()) {
+                var rowModel = rowIterator.next();
+                var blockIterator = rowModel.getIterator();
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+                    newBlockList.push(block);
+                }
+            }
+            
+            newBlockList = this.sortBlockList(newBlockList);
+            
+            this.blockList = [];
+            var block = false;
+            var nextBlock = false;
+            var order = 0;
+
+            var blockIterator = new ArrayIterator(newBlockList);
+            /* TODO: merge block duplication */ 
+            while (blockIterator.hasNext()) {
+                if (!block) {
+                    /* TODO: agregator block creation */
+                    block = blockIterator.next()
+                    block = new BlockModel(this, order, block.getBlockData());
+                    block.blockData.agregatedBlocks = [];
+                    block.blockData.agregatedBlocks.push(block);
+                    this.blockList.push(block);
+                }
+                
+                if (blockIterator.hasNext()) {
+                    nextBlock = blockIterator.next();
+                } else {
+                    break;
+                }
+                
+                if (block.end().compareTo(nextBlock.end()) >= 0) {
+                    block.blockData.agregatedBlocks.push(nextBlock);
+                }
+                else if (block.end().clone().addDays(1).compareTo(nextBlock.start()) >= 0) {
+                    block.setEnd(nextBlock.end());
+                    block.blockData.agregatedBlocks.push(nextBlock);
+                }
+                else {
+                    block = new BlockModel(this, order, nextBlock.getBlockData());
+                    block.blockData.agregatedBlocks = [];
+                    block.blockData.agregatedBlocks.push(nextBlock);
+                    this.blockList.push(block);
+                }
+            }
+        },
+/* 
         mergeCrossedBlocks: function(blockList) {
-            /* (TODO: function can be optimized) */
             if (blockList.length < 1) {
                 return blockList;
             }
@@ -1611,17 +1681,10 @@ boundary: {left : object/string right: object/string}
 
             return mergedArr;
         },
+*/
         sortBlockList: function(blockList) {
             blockList.sort(function(leftBlock, rightBlock) {
-                var leftStartDate = leftBlock.start.getTime();
-                var rightStartDate = rightBlock.start.getTime();
-                if (leftStartDate < rightStartDate) {
-                    return -1;
-                } else if (leftStartDate > rightStartDate) {
-                    return 1;
-                } else {
-                    return 0;
-                }
+                return leftBlock.start().compareTo(rightBlock.start());
             });
             return blockList;
         }
@@ -1636,6 +1699,17 @@ boundary: {left : object/string right: object/string}
         this.options = this.parent.parent.parent.options;
         this.order = blockNum;
         this.blockData = blockData;
+
+        this.setStart(this.blockData.start);
+        this.setEnd(this.blockData.end);
+
+        /* calculate max/min dates  */
+        if (!this.parent.minDate || this.parent.minDate.compareTo(this.start()) >= 0) {
+            this.parent.minDate = this.start().clone();
+        }
+        if (!this.parent.maxDate || this.parent.maxDate.compareTo(this.end()) <= 0) {
+            this.parent.maxDate = this.end().clone();
+        }
 
         this.selected = false;
         
@@ -1671,7 +1745,7 @@ boundary: {left : object/string right: object/string}
             }
             
             if (!format) {
-                format = options.dateFormat;
+                format = this.options.dateFormat;
             }
             this.blockData.start = DateUtils.convertToDate(date, format).clearTime();
             this.parent.needToUpdate = true;
@@ -1685,19 +1759,16 @@ boundary: {left : object/string right: object/string}
              * agregatorBlock functionality need to create a class
              */
             if (this.parent.order == -1) {
-                var positionIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (positionIterator.hasNext()) {
-                    position = positionIterator.next();
-                    var agregator = this.parent.parent;
-                    var row = agregator.getRow(position.row);
-                    var block = row.getBlock(position.block);
+                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
                     
                     block.setEnd(date, format);
                 }
             }
             
             if (!format) {
-                format = options.dateFormat;
+                format = this.options.dateFormat;
             }
             this.blockData.end = DateUtils.convertToDate(date, format).clearTime();
             this.parent.needToUpdate = true;
