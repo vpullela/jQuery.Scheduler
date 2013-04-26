@@ -764,7 +764,6 @@ boundary: {left : object/string right: object/string}
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
                 blockModel.resize(ui.helper.position().left, ui.helper.width());
-                
                 if (blockModel != resizedBlockModel) {
                     blockModel.notifyObservers();
                 }
@@ -781,7 +780,6 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
-
             var blockModel = this.model.getBlockByPosition($(e.currentTarget).data("position"));
             if (e.ctrlKey == true) {
                 blockModel.select();
@@ -1311,7 +1309,6 @@ boundary: {left : object/string right: object/string}
             var blockList = []
             for (rowNum in data) {
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
-                row.mergeBlocks();
                 this.rowList.push(row);
             }
             this.updateAgregatedRow();
@@ -1413,6 +1410,8 @@ boundary: {left : object/string right: object/string}
                 var block = new BlockModel(this, blockNum, blockList[blockNum]);
                 this.blockList.push(block);
             }
+            
+            this.mergeBlocks();
         },
         getBlockList: function() {
             var result = [];
@@ -1598,90 +1597,36 @@ boundary: {left : object/string right: object/string}
             
             this.blockList = [];
             var block = false;
-            var nextBlock = false;
+            var agregatorBlock = false;
             var order = 0;
 
             var blockIterator = new ArrayIterator(newBlockList);
             /* TODO: merge block duplication */ 
             while (blockIterator.hasNext()) {
-                if (!block) {
-                    /* TODO: agregator block creation */
-                    block = blockIterator.next()
-                    block = new BlockModel(this, order, block.getBlockData());
-                    block.blockData.agregatedBlocks = [];
-                    block.blockData.agregatedBlocks.push(block);
-                    this.blockList.push(block);
+                block = blockIterator.next();
+                if (agregatorBlock && agregatorBlock.end().compareTo(block.end()) >= 0) {
+                    agregatorBlock.blockData.agregatedBlocks.push(block);
                 }
-                
-                if (blockIterator.hasNext()) {
-                    nextBlock = blockIterator.next();
-                } else {
-                    break;
-                }
-                
-                if (block.end().compareTo(nextBlock.end()) >= 0) {
-                    block.blockData.agregatedBlocks.push(nextBlock);
-                }
-                else if (block.end().clone().addDays(1).compareTo(nextBlock.start()) >= 0) {
-                    block.setEnd(nextBlock.end());
-                    block.blockData.agregatedBlocks.push(nextBlock);
+                else if (agregatorBlock && agregatorBlock.end().clone().addDays(1).compareTo(block.start()) >= 0) {
+                    /* TODO: add 2 setter to update all the agregated blocks and just for agregator */
+                    agregatorBlock.blockData.end = block.end().clone();
+                    agregatorBlock.blockData.agregatedBlocks.push(block);
                 }
                 else {
-                    block = new BlockModel(this, order, nextBlock.getBlockData());
-                    block.blockData.agregatedBlocks = [];
-                    block.blockData.agregatedBlocks.push(nextBlock);
-                    this.blockList.push(block);
+                    var blockData = $.extend(true, {}, block.getBlockData());
+                    blockData.start = blockData.start.clone();
+                    blockData.end = blockData.end.clone(); 
+                    
+                    agregatorBlock = new BlockModel(this, order, blockData);
+                    order++;
+                    agregatorBlock.blockData.agregatedBlocks = [];
+                    agregatorBlock.blockData.agregatedBlocks.push(block);
+                    block.agregatorBlock = agregatorBlock;
+                    
+                    this.blockList.push(agregatorBlock);
                 }
             }
         },
-/* 
-        mergeCrossedBlocks: function(blockList) {
-            if (blockList.length < 1) {
-                return blockList;
-            }
-
-            blockList = this.sortBlockList(blockList);
-            var currentBlock = blockList[0];
-
-            if (this.isAgregatorRow) {
-                currentBlock.agregatedBlocks = [];
-                currentBlock.agregatedBlocks.push(currentBlock.position);
-            }
-
-            var mergedArr = [];
-            for (var i=1; i < blockList.length; i++) {
-                var nextBlock = blockList[i];
-                var currentStartDate = currentBlock.start;
-                var currentEndDate = currentBlock.end;
-                var nextStartDate = nextBlock.start;
-                var nextEndDate = nextBlock.end;
-
-                if (currentEndDate.compareTo(nextEndDate) >= 0) {
-                    if (this.isAgregatorRow) {
-                        currentBlock.agregatedBlocks.push(nextBlock.position);
-                    }
-                    continue;
-                }
-                if (currentEndDate.clone().addDays(1).compareTo(nextStartDate) >= 0) { // add 1 day to merge neighbors
-                    if (this.isAgregatorRow) {
-                        currentBlock.agregatedBlocks.push(nextBlock.position);
-                    }
-                    currentBlock.end = nextBlock.end;
-                    continue;
-                }
-                mergedArr.push(currentBlock);
-                currentBlock = nextBlock;
-
-                if (this.isAgregatorRow) {
-                    currentBlock.agregatedBlocks = [];
-                    currentBlock.agregatedBlocks.push(nextBlock.position);
-                }
-            }
-            mergedArr.push(currentBlock);
-
-            return mergedArr;
-        },
-*/
         sortBlockList: function(blockList) {
             blockList.sort(function(leftBlock, rightBlock) {
                 return leftBlock.start().compareTo(rightBlock.start());
@@ -1700,8 +1645,8 @@ boundary: {left : object/string right: object/string}
         this.order = blockNum;
         this.blockData = blockData;
 
-        this.setStart(this.blockData.start);
-        this.setEnd(this.blockData.end);
+        this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
+        this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
 
         /* calculate max/min dates  */
         if (!this.parent.minDate || this.parent.minDate.compareTo(this.start()) >= 0) {
@@ -1717,6 +1662,8 @@ boundary: {left : object/string right: object/string}
         this.width = 0;
 
         this.observerList = [];
+        
+        this.agregatorBlock = false;
 
         /* HACK: set an agregator color */
         if (this.parent.isAgregatorRow) {
@@ -1733,12 +1680,9 @@ boundary: {left : object/string right: object/string}
              * agregatorBlock functionality need to create a class
              */
             if (this.parent.order == -1) {
-                var positionIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (positionIterator.hasNext()) {
-                    position = positionIterator.next();
-                    var agregator = this.parent.parent;
-                    var row = agregator.getRow(position.row);
-                    var block = row.getBlock(position.block);
+                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
                     
                     block.setStart(date, format);
                 }
@@ -1795,32 +1739,8 @@ boundary: {left : object/string right: object/string}
 
             return jsonData;
         },
-        setBlockData: function(blockData) {
-            this.blockData = blockData;
-        },
         getAgregatorBlock: function() {
-            if (this.parent.order == -1) {
-                return false;
-            }
-            
-            var agregator = this.parent.parent;
-
-            agregatorBlockIterator = agregator.agregatedRow.getIterator();
-            while (agregatorBlockIterator.hasNext()) {
-                agregatorBlock = agregatorBlockIterator.next();
-                agregatedBlockList = agregatorBlock.getAgregatedBlocks();
-                
-                positionIterator = new ArrayIterator(agregatedBlockList);
-                while (positionIterator.hasNext()) {
-                    position = positionIterator.next();
-                    
-                    if (position.row == this.parent.order && position.block == this.order) {
-                        return agregatorBlock;
-                    }
-                }
-            }
-            
-            return false;
+            return this.agregatorBlock;
         },
         getRow: function() {
             return this.parent;
@@ -1951,7 +1871,6 @@ boundary: {left : object/string right: object/string}
         select: function() {
             /* TODO: add getter to model */
             var workbenchModel = this.parent.parent.parent;
-
             workbenchModel.selectedBlocks.addBlock(this);
             this.selected = true;
             this.notifyObservers();
@@ -1960,15 +1879,13 @@ boundary: {left : object/string right: object/string}
                 /* TODO: add getter to model ? move to model part ? */
                 var agregatorModel = this.parent.parent;
 
-                var positionIterator = new ArrayIterator(this.blockData.agregatedBlocks);
-                while(positionIterator.hasNext()) {
-                    var position = positionIterator.next();
-                    var rowModel = agregatorModel.getRow(position.row);
-                    var blockModel = rowModel.getBlock(position.block);
+                var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
+                while(blockIterator.hasNext()) {
+                    var block = blockIterator.next();
 
-                    workbenchModel.selectedBlocks.addBlock(blockModel);
-                    blockModel.selected = true;
-                    blockModel.notifyObservers();
+                    workbenchModel.selectedBlocks.addBlock(block);
+                    block.selected = true;
+                    block.notifyObservers();
                 }
             }
         },
@@ -2286,7 +2203,7 @@ boundary: {left : object/string right: object/string}
             if (typeof date == "string") {
                 date = Date.parseExact(date, format);
             }
-            return date;
+            return date.clone();
         }
     };
 
