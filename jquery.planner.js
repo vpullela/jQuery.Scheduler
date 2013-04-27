@@ -1620,7 +1620,7 @@ boundary: {left : object/string right: object/string}
                     blockData.start = blockData.start.clone();
                     blockData.end = blockData.end.clone(); 
                     
-                    agregatorBlock = new BlockModel(this, order, blockData);
+                    agregatorBlock = new AgregatorBlockModel(this, order, blockData);
                     order++;
                     agregatorBlock.blockData.agregatedBlocks = [];
                     agregatorBlock.blockData.agregatedBlocks.push(block);
@@ -1639,15 +1639,15 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * BlockModel class
+     * AbstractBlockModel class 
      */
-    function BlockModel(parent, blockNum, blockData) {
+    function AbstractBlockModel(parent, blockNum, blockData) {
         this.parent = parent;
         /* TODO: add getter to model */
         this.options = this.parent.parent.parent.options;
         this.order = blockNum;
         this.blockData = blockData;
-
+        
         this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
         this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
 
@@ -1665,15 +1665,8 @@ boundary: {left : object/string right: object/string}
         this.width = 0;
 
         this.observerList = [];
-        
-        this.agregatorBlock = false;
-
-        /* HACK: set an agregator color */
-        if (this.parent.isAgregatorRow) {
-            this.blockData.color = "#CFE3BF";
-        }
     }
-    $.extend(BlockModel.prototype, {
+    $.extend(AbstractBlockModel.prototype, {
         start: function() {
             return this.blockData.start;
         },
@@ -1724,14 +1717,6 @@ boundary: {left : object/string right: object/string}
             return this.blockData.color;
         },
 
-        /* TODO: ? think about adding the AgregatorBlockModel class ? */
-        getAgregatedBlocks: function() {
-            if (this.blockData.agregatedBlocks) {
-                return this.blockData.agregatedBlocks;
-            } else {
-                return false;
-            }
-        },
         getBlockData: function() {
             return this.blockData;
         },
@@ -1741,9 +1726,6 @@ boundary: {left : object/string right: object/string}
             jsonData.end = jsonData.end.toString(this.options.dateFormat);
 
             return jsonData;
-        },
-        getAgregatorBlock: function() {
-            return this.agregatorBlock;
         },
         getRow: function() {
             return this.parent;
@@ -1872,25 +1854,10 @@ boundary: {left : object/string right: object/string}
             this.parent.needToUpdate = true;
         },
         select: function() {
-            /* TODO: add getter to model */
-            var workbenchModel = this.parent.parent.parent;
+            var workbenchModel = this.getRow().getAgregator().getWorkbanch();
             workbenchModel.selectedBlocks.addBlock(this);
             this.selected = true;
             this.notifyObservers();
-
-            if (this.parent.isAgregatorRow) {
-                /* TODO: add getter to model ? move to model part ? */
-                var agregatorModel = this.parent.parent;
-
-                var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
-                while(blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-
-                    workbenchModel.selectedBlocks.addBlock(block);
-                    block.selected = true;
-                    block.notifyObservers();
-                }
-            }
         },
         unselect: function() {
             this.selected = false;
@@ -1898,10 +1865,60 @@ boundary: {left : object/string right: object/string}
         }, 
         remove: function() {
             /* TODO: ? move the metod to RowModel ?*/ 
-            this.parent.blockList.splice($.inArray(this, this.parent.blockList), 1);
-            this.parent.needToUpdate = true;
+            this.getRow().blockList.splice($.inArray(this, this.getRow().blockList), 1);
+            this.getRow().needToUpdate = true;
         },
 
+        
+        /* TODO: move to abstract model (create AbstractModel)*/
+        addObserver: function(observer) {
+            return this.observerList.push(observer);
+        },
+        removeObserver: function(observer) {
+            for (var index in this.observerList) {
+                if (observer == this.observerList[index]) {
+                    this.observerList.splice(index, 1);
+                }
+            }
+        },
+        notifyObservers: function() {
+            observerIterator = new ArrayIterator(this.observerList);
+            while (observerIterator.hasNext()) {
+                var observer = observerIterator.next();
+                observer.update();
+            }
+        },
+    });
+
+
+    /**
+     * BlockModel class
+     */
+    function BlockModel(parent, blockNum, blockData) {
+        AbstractBlockModel.apply(this, arguments);
+
+        this.agregatorBlock = false;
+    }
+    BlockModel.prototype = Object.create(AbstractBlockModel.prototype);
+
+    $.extend(BlockModel.prototype, {
+        getAgregatorBlock: function() {
+            return this.agregatorBlock;
+        },
+    });
+
+    /**
+     * AgregatorBlockModel class
+     */
+    function AgregatorBlockModel(parent, blockNum, blockData) {
+        AbstractBlockModel.apply(this, arguments);
+        
+        /* TODO: move to configuration part */
+        this.blockData.color = "#CFE3BF";
+    }
+    AgregatorBlockModel.prototype = Object.create(AbstractBlockModel.prototype);
+
+    $.extend(AgregatorBlockModel.prototype, {
         /* TODO: ?new class ? AgregatedBlock method */
         isAgregationSolid: function() {
             var agregatedBlocks = this.getAgregatedBlocks();
@@ -1936,25 +1953,28 @@ boundary: {left : object/string right: object/string}
 
             return true;
         },
-        /* TODO: move to abstract model (create AbstractModel)*/
-        addObserver: function(observer) {
-            return this.observerList.push(observer);
-        },
-        removeObserver: function(observer) {
-            for (var index in this.observerList) {
-                if (observer == this.observerList[index]) {
-                    this.observerList.splice(index, 1);
-                }
+        select: function() {
+            AbstractBlockModel.prototype.select.apply(this, arguments);
+    
+            var workbenchModel = this.getRow().getAgregator().getWorkbanch();
+            var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
+            while(blockIterator.hasNext()) {
+                var block = blockIterator.next();
+
+                workbenchModel.selectedBlocks.addBlock(block);
+                block.selected = true;
+                block.notifyObservers();
             }
         },
-        notifyObservers: function() {
-            observerIterator = new ArrayIterator(this.observerList);
-            while (observerIterator.hasNext()) {
-                var observer = observerIterator.next();
-                observer.update();
+        getAgregatedBlocks: function() {
+            if (this.blockData.agregatedBlocks) {
+                return this.blockData.agregatedBlocks;
+            } else {
+                return false;
             }
         },
     });
+
 
     /**
      * BlockMenuModel class
