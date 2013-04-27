@@ -1293,6 +1293,9 @@ boundary: {left : object/string right: object/string}
         this.expanded = false;
     }
     $.extend(AgregatorModel.prototype, {
+        getWorkbench: function() {
+            return this.parent;
+        },
         getAgregatedRow: function() {
             return this.agregatedRow;
         },
