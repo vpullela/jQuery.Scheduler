@@ -1465,31 +1465,28 @@ boundary: {left : object/string right: object/string}
         mergeBlocks: function() {
             this.blockList = this.sortBlockList(this.blockList);
             
-            var block = false;
-            var nextBlock = false;
-
+            var previousBlock = false;
+            
+            var blockToDelete = [];
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
-                if (!block) {
-                    block = blockIterator.next();
+                var block = blockIterator.next();
+                if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
+                    blockToDelete.push(block);
                 }
-
-                if (blockIterator.hasNext()) {
-                    nextBlock = blockIterator.next();
-                } else {
-                    break;
-                }
-                
-                if (block.end().compareTo(nextBlock.end()) >= 0) {
-                    nextBlock.remove();
-                }
-                else if (block.end().clone().addDays(1).compareTo(nextBlock.start()) >= 0) {
-                    block.setEnd(nextBlock.end());
-                    nextBlock.remove();
+                else if (previousBlock && previousBlock.end().clone().addDays(1).compareTo(block.start()) >= 0) {
+                    previousBlock.blockData.end = block.end().clone();
+                    blockToDelete.push(block);
                 }
                 else {
-                    block = nextBlock;
-                } 
+                    previousBlock = block;
+                }
+            }
+            
+            blockIterator = new ArrayIterator(blockToDelete);
+            while (blockIterator.hasNext()) {
+                block = blockIterator.next();
+                block.remove();
             } 
         },
     });
@@ -1517,21 +1514,23 @@ boundary: {left : object/string right: object/string}
             newBlockList = this.sortBlockList(newBlockList);
             
             this.blockList = [];
-            var block = false;
+
             var agregatorBlock = false;
             var order = 0;
 
             var blockIterator = new ArrayIterator(newBlockList);
             /* TODO: merge block duplication */ 
             while (blockIterator.hasNext()) {
-                block = blockIterator.next();
+                var block = blockIterator.next();
                 if (agregatorBlock && agregatorBlock.end().compareTo(block.end()) >= 0) {
                     agregatorBlock.blockData.agregatedBlocks.push(block);
+                    block.agregatorBlock = agregatorBlock;
                 }
                 else if (agregatorBlock && agregatorBlock.end().clone().addDays(1).compareTo(block.start()) >= 0) {
                     /* TODO: add 2 setter to update all the agregated blocks and just for agregator */
                     agregatorBlock.blockData.end = block.end().clone();
                     agregatorBlock.blockData.agregatedBlocks.push(block);
+                    block.agregatorBlock = agregatorBlock;
                 }
                 else {
                     var blockData = $.extend(true, {}, block.getBlockData());
@@ -1749,6 +1748,7 @@ boundary: {left : object/string right: object/string}
                  * getAgregatorBlock can be optimized
                  * optimize comparation
                  */
+
                 var agregatorBlock = this.getAgregatorBlock();
                 if (agregatorBlock) {
                     if (this.start().clone().addDays(days).compareTo(agregatorBlock.start()) >= 0) {
