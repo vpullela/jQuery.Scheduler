@@ -279,7 +279,7 @@ boundary: {left : object/string right: object/string}
      */
     function VtHeaderAgregatorView(agregatorModel) {
         this.model = agregatorModel;
-        this.options = this.model.parent.options;
+        this.options = this.model.getWorkbench().options;
 
         this._init();
     }
@@ -848,8 +848,8 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            this.agregatedRowView = new RowView(this.options, this.model.getAgregatedRow());
-            this.appendJquery(this.agregatedRowView);
+            this.agregatorRowView = new RowView(this.options, this.model.getAgregatorRow());
+            this.appendJquery(this.agregatorRowView);
 
             var rowIterator = this.model.getIterator();
             while (rowIterator.hasNext()) {
@@ -862,7 +862,7 @@ boundary: {left : object/string right: object/string}
         },
         removeContent: function() {
             /* TODO: WORKAROUND bug with selected while toggeling */
-            this.model.parent.selectedBlocks.empty();
+            this.model.getWorkbench().selectedBlocks.empty();
 
             /* TODO:: removeContent refactoring */
             $(this.contentArray).each(function() {
@@ -871,10 +871,10 @@ boundary: {left : object/string right: object/string}
                 this.stopObserveModel();
             });
 
-            if (this.agregatedRowView) {
-                this.agregatedRowView.removeContent();
-                this.agregatedRowView.destroyJquery();
-                this.agregatedRowView.stopObserveModel();
+            if (this.agregatorRowView) {
+                this.agregatorRowView.removeContent();
+                this.agregatorRowView.destroyJquery();
+                this.agregatorRowView.stopObserveModel();
             }
 
             this.contentArray = [];
@@ -918,7 +918,7 @@ boundary: {left : object/string right: object/string}
 
             this.render();
 
-            if (!this.model.parent.expanded && this.model.order != -1) {
+            if (!this.model.getAgregator().expanded && this.model.order != -1) {
                 this.hide();
             }
         },
@@ -1017,7 +1017,7 @@ boundary: {left : object/string right: object/string}
             
             // duration & agregation solid
             var notSolidNotificator = "";
-            if (this.model.parent.order == -1 && !this.model.isAgregationSolid()) {
+            if (this.model.getRow().order == -1 && !this.model.isAgregationSolid()) {
                 notSolidNotificator = "*";
             }
             this.textBlock.text(size + notSolidNotificator);
@@ -1238,7 +1238,7 @@ boundary: {left : object/string right: object/string}
                 row.notifyObservers();
             }
 
-            agregator.updateAgregatedRow();
+            agregator.updateAgregatorRow();
         },
         updateSelectedBlocks: function() {
             this.update();
@@ -1275,33 +1275,32 @@ boundary: {left : object/string right: object/string}
      * AgregatorModel class
      */
     function AgregatorModel(parent, order, metadata, data) {
+        AbstractModel.apply(this, arguments);
+        
         this.parent = parent;
-        this.options = this.parent.options;
+        this.options = this.getWorkbench().options;
         this.order = order;
         
         this.rowList = [];
-        this.agregatedRow = new RowModel(this, -1, {}, []);
-
-        this.minDate = undefined;
-        this.maxDate = undefined;
+        this.agregatorRow = new AgregatorRowModel(this, -1, {}, []);
 
         this.metadata = metadata
         this.setData(data);
 
-        this.observerList = [];
         /* TODO: move to configuration part */
         this.expanded = false;
     }
+    AgregatorModel.prototype = Object.create(AbstractModel.prototype);
     $.extend(AgregatorModel.prototype, {
         getWorkbench: function() {
             return this.parent;
         },
-        getAgregatedRow: function() {
-            return this.agregatedRow;
+        getAgregatorRow: function() {
+            return this.agregatorRow;
         },
-        updateAgregatedRow: function() {
-            this.agregatedRow.agregateBlocks();
-            this.agregatedRow.notifyObservers();
+        updateAgregatorRow: function() {
+            this.agregatorRow.agregateBlocks();
+            this.agregatorRow.notifyObservers();
         },
         toggle: function() {
             this.expanded = !this.expanded;
@@ -1314,14 +1313,14 @@ boundary: {left : object/string right: object/string}
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
                 this.rowList.push(row);
             }
-            this.updateAgregatedRow();
+            this.updateAgregatorRow();
         },
         getData: function() {
             return this.rowList;
         },
         getRow: function(order) {
             if (order == -1) {
-                return this.agregatedRow;
+                return this.agregatorRow;
             }
             return this.rowList[order];
         },
@@ -1353,26 +1352,7 @@ boundary: {left : object/string right: object/string}
             }
             
             if (needToUpdate) {
-                this.updateAgregatedRow();
-            }
-        },
-
-        /* TODO: move to abstract model (create AbstractModel)*/
-        addObserver: function(observer) {
-            return this.observerList.push(observer);
-        },
-        removeObserver: function(observer) {
-            for (var index in this.observerList) {
-                if (observer == this.observerList[index]) {
-                    this.observerList.splice(index, 1);
-                }
-            }
-        },
-        notifyObservers: function() {
-            observerIterator = new ArrayIterator(this.observerList);
-            while (observerIterator.hasNext()) {
-                var observer = observerIterator.next();
-                observer.update();
+                this.updateAgregatorRow();
             }
         },
 
@@ -1383,39 +1363,24 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     *  RowModel class
+     *  AbstractRowModel class
      */
-    function RowModel(parent, rowNum, metadata, blockList) {
+    function AbstractRowModel(parent, rowNum, metadata, blockList) {
+        AbstractModel.apply(this, arguments);
+
         this.parent = parent;
         this.order = rowNum;
 
         this.needToUpdate = false;
 
-        this.options = this.parent.parent.options;
+        this.options = this.getAgregator().options;
 
         this.metadata = metadata;
         this.blockList = [];
-
-        this.observerList = [];
-        this.setBlockList(blockList);
-
-        /*TODO: create subclass AgregatedRowModel */
-        this.isAgregatorRow = (this.order == -1);
     }
-    $.extend(RowModel.prototype, {
-        setBlockList: function(blockList) {
-            blockList = $.extend(true, [], blockList);
-            blockList = this.prepareRowData(blockList);
-
-            this.blockList = [];
-
-            for (blockNum in blockList) {
-                var block = new BlockModel(this, blockNum, blockList[blockNum]);
-                this.blockList.push(block);
-            }
-            
-            this.mergeBlocks();
-        },
+    AbstractRowModel.prototype = Object.create(AbstractModel.prototype);
+    
+    $.extend(AbstractRowModel.prototype, {
         getBlockList: function() {
             var result = [];
             var blockIterator = this.getIterator();
@@ -1449,7 +1414,7 @@ boundary: {left : object/string right: object/string}
         getPosition: function() {
             return {
                 row: this.order,
-                agregator: this.parent.order
+                agregator: this.getAgregator().order
             };
         },
 
@@ -1462,97 +1427,40 @@ boundary: {left : object/string right: object/string}
         getAgregator: function() {
             return this.parent;
         },
-        
+
+        sortBlockList: function(blockList) {
+            blockList.sort(function(leftBlock, rightBlock) {
+                return leftBlock.start().compareTo(rightBlock.start());
+            });
+            return blockList;
+        },
+
         getIterator: function() {
             return new ArrayIterator(this.blockList);
         },
+    });
 
-        /* TODO: move to abstract model (create AbstractModel)*/
-        addObserver: function(observer) {
-            return this.observerList.push(observer);
-        },
-        removeObserver: function(observer) {
-            for (var index in this.observerList) {
-                if (observer == this.observerList[index]) {
-                    this.observerList.splice(index, 1);
-                }
-            }
-        },
-        notifyObservers: function() {
-            observerIterator = new ArrayIterator(this.observerList);
-            while (observerIterator.hasNext()) {
-                var observer = observerIterator.next();
-                observer.update();
-            }
-        },
+    /**
+     *  RowModel class
+     */
+    function RowModel(parent, rowNum, metadata, blockList) {
+        AbstractRowModel.apply(this, arguments);
 
-        // help function
-        prepareRowData: function(rowData) {
-            var correctArr = [];
-            /* TODO: ? move to a separete function */
-            for(var i=0; i< rowData.length; i++) {
-                /* skip if period is not set */
-                if (!rowData[i].start || !rowData[i].end) {
-                    continue;
-                }
+        this.setBlockList(blockList);
+    }
+    RowModel.prototype = Object.create(AbstractRowModel.prototype);
+    $.extend(RowModel.prototype, {
+        setBlockList: function(blockList) {
+            blockList = $.extend(true, [], blockList);
 
-                /* convert if dates in string */
-                rowData[i].start = DateUtils.convertToDate(rowData[i].start, this.options.dateFormat);
-                rowData[i].end = DateUtils.convertToDate(rowData[i].end, this.options.dateFormat);
+            this.blockList = [];
 
-                /* remove intervals with switched date */
-                if (!rowData[i].start || !rowData[i].end || rowData[i].start.isAfter(rowData[i].end)) {
-                    continue;
-                }
-
-                /* fit to boundary */
-                if (!this.options.expandBorder) {
-
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0
-                        && rowData[i].end.compareTo(this.options.boundary.getLeft()) < 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getRight()) > 0
-                        && rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        continue;
-                    }
-                    if (rowData[i].start.compareTo(this.options.boundary.getLeft()) < 0) {
-                        rowData[i].start = this.options.boundary.getLeft();
-                    }
-                    if (rowData[i].end.compareTo(this.options.boundary.getRight()) > 0) {
-                        rowData[i].end = this.options.boundary.getRight();
-                    }
-                }
-
-                /* calculate max/min dates  */
-                if (!this.parent.minDate || this.parent.minDate.compareTo(rowData[i].start) >= 0) {
-                    this.parent.minDate = rowData[i].start.clone();
-                }
-                if (!this.parent.maxDate || this.parent.maxDate.compareTo(rowData[i].end) <= 0) {
-                    this.parent.maxDate = rowData[i].end.clone();
-                }
-
-                correctArr.push(rowData[i]);
-            }
-            /* TODO: ? remove verification ?*/
-            if (correctArr.length < 1) {
-                return correctArr;
+            for (blockNum in blockList) {
+                var block = new BlockModel(this, blockNum, blockList[blockNum]);
+                this.blockList.push(block);
             }
 
-            /* change bundaries */
-            if (this.options.expandBorder) {
-                if (this.parent.minDate.compareTo(this.options.boundary.getLeft()) < 0) {
-                    this.options.boundary.setLeft(this.parent.minDate);
-                }
-                if (this.parent.maxDate.compareTo(this.options.boundary.getRight()) > 0) {
-                    this.options.boundary.setRight(this.parent.maxDate);
-                }
-            }
-            return correctArr;
-            
-            /* merge crossed intervals */
-            var mergedArr = this.mergeCrossedBlocks(correctArr);
-            return mergedArr;
+            this.mergeBlocks();
         },
         mergeBlocks: function() {
             this.blockList = this.sortBlockList(this.blockList);
@@ -1584,6 +1492,16 @@ boundary: {left : object/string right: object/string}
                 } 
             } 
         },
+    });
+
+    /**
+     *  AgregatorRowModel class
+     */
+    function AgregatorRowModel(parent, rowNum, metadata, blockList) {
+        AbstractRowModel.apply(this, arguments);
+    }
+    AgregatorRowModel.prototype = Object.create(AbstractRowModel.prototype);
+    $.extend(AgregatorRowModel.prototype, {
         agregateBlocks: function() {
             var newBlockList = [];
             var rowIterator = this.getAgregator().getIterator();
@@ -1630,33 +1548,47 @@ boundary: {left : object/string right: object/string}
                 }
             }
         },
-        sortBlockList: function(blockList) {
-            blockList.sort(function(leftBlock, rightBlock) {
-                return leftBlock.start().compareTo(rightBlock.start());
-            });
-            return blockList;
-        }
     });
 
     /**
      * AbstractBlockModel class 
      */
     function AbstractBlockModel(parent, blockNum, blockData) {
+        AbstractModel.apply(this, arguments);
+
         this.parent = parent;
-        /* TODO: add getter to model */
-        this.options = this.parent.parent.parent.options;
+        this.options = this.getRow().getAgregator().getWorkbench().options;
         this.order = blockNum;
         this.blockData = blockData;
         
+        /* convert if dates in string */
         this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
         this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
 
-        /* calculate max/min dates  */
-        if (!this.parent.minDate || this.parent.minDate.compareTo(this.start()) >= 0) {
-            this.parent.minDate = this.start().clone();
-        }
-        if (!this.parent.maxDate || this.parent.maxDate.compareTo(this.end()) <= 0) {
-            this.parent.maxDate = this.end().clone();
+        if (!this.options.expandBorder) {
+            /* fit to boundary */
+            if (this.start().compareTo(this.options.boundary.getLeft()) < 0
+                && this.end().compareTo(this.options.boundary.getLeft()) < 0) {
+                throw "wrong period";
+            }
+            if (this.start().compareTo(this.options.boundary.getRight()) > 0
+                && this.end().compareTo(this.options.boundary.getRight()) > 0) {
+                throw "wrond period";
+            }
+            if (this.start().compareTo(this.options.boundary.getLeft()) < 0) {
+                this.blockData.start = this.options.boundary.getLeft().clone();
+            }
+            if (this.end().compareTo(this.options.boundary.getRight()) > 0) {
+                this.blockData.end = this.options.boundary.getRight().clone();
+            }
+        } else {
+            /* calculate max/min dates  */
+            if (this.start().compareTo(this.options.boundary.getLeft()) < 0) {
+                this.options.boundary.setLeft(this.start().clone());
+            }
+            if (this.end().compareTo(this.options.boundary.getRight()) > 0) {
+                this.options.boundary.setRight(this.end().clone());
+            }
         }
 
         this.selected = false;
@@ -1666,6 +1598,8 @@ boundary: {left : object/string right: object/string}
 
         this.observerList = [];
     }
+    AbstractBlockModel.prototype = Object.create(AbstractModel.prototype);
+
     $.extend(AbstractBlockModel.prototype, {
         start: function() {
             return this.blockData.start;
@@ -1675,7 +1609,7 @@ boundary: {left : object/string right: object/string}
              * duplication isAgregatorSolid, setEnd
              * agregatorBlock functionality need to create a class
              */
-            if (this.parent.order == -1) {
+            if (this.getRow().order == -1) {
                 var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
                 while (blockIterator.hasNext()) {
                     var block = blockIterator.next();
@@ -1688,7 +1622,7 @@ boundary: {left : object/string right: object/string}
                 format = this.options.dateFormat;
             }
             this.blockData.start = DateUtils.convertToDate(date, format).clearTime();
-            this.parent.needToUpdate = true;
+            this.getRow().needToUpdate = true;
         },
         end: function() {
             return this.blockData.end;
@@ -1698,7 +1632,7 @@ boundary: {left : object/string right: object/string}
              * duplication isAgregatorSolid, setStart
              * agregatorBlock functionality need to create a class
              */
-            if (this.parent.order == -1) {
+            if (this.getRow().order == -1) {
                 var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
                 while (blockIterator.hasNext()) {
                     var block = blockIterator.next();
@@ -1711,7 +1645,7 @@ boundary: {left : object/string right: object/string}
                 format = this.options.dateFormat;
             }
             this.blockData.end = DateUtils.convertToDate(date, format).clearTime();
-            this.parent.needToUpdate = true;
+            this.getRow().needToUpdate = true;
         },
         color: function() {
             return this.blockData.color;
@@ -1733,8 +1667,8 @@ boundary: {left : object/string right: object/string}
         getPosition: function() {
             return {
                 block: this.order,
-                row: this.parent.order,
-                agregator: this.parent.parent.order
+                row: this.getRow().order,
+                agregator: this.getRow().getAgregator().order
             };
         },
 
@@ -1766,7 +1700,7 @@ boundary: {left : object/string right: object/string}
         resizeLeft: function(days) {
             if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
                 this.blockData.start = this.options.boundary.left.clone();
-                this.parent.needToUpdate = true;
+                this.getRow().needToUpdate = true;
                 return;
             }
             
@@ -1789,7 +1723,7 @@ boundary: {left : object/string right: object/string}
                     
                     if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
                         this.blockData.start = this.end().clone();
-                        this.parent.needToUpdate = true;
+                        this.getRow().needToUpdate = true;
                         return;
                     }
                 } else {
@@ -1798,12 +1732,12 @@ boundary: {left : object/string right: object/string}
             }
 
             this.start().addDays(days);
-            this.parent.needToUpdate = true;
+            this.getRow().needToUpdate = true;
         },
         resizeRight: function(days) {
             if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
                 this.blockData.end = this.options.boundary.right.clone();
-                this.parent.needToUpdate = true;
+                this.getRow().needToUpdate = true;
                 return;
             }
             
@@ -1825,7 +1759,7 @@ boundary: {left : object/string right: object/string}
                     
                     if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
                         this.blockData.end = this.start().clone();
-                        this.parent.needToUpdate = true;
+                        this.getRow().needToUpdate = true;
                         return;
                     }
                 } else {
@@ -1834,27 +1768,27 @@ boundary: {left : object/string right: object/string}
             }
             
             this.end().addDays(days);
-            this.parent.needToUpdate = true;
+            this.getRow().needToUpdate = true;
         },
         drag: function(days) {
             /* TODO: optimize date comparation */
             if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
                 this.blockData.start = this.options.boundary.left.clone();
-                this.parent.needToUpdate = true;
+                this.getRow().needToUpdate = true;
                 return;
             }
             if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
                 this.blockData.end = this.options.boundary.right.clone();
-                this.parent.needToUpdate = true;
+                this.getRow().needToUpdate = true;
                 return;
             }
 
             this.start().addDays(days);
             this.end().addDays(days);
-            this.parent.needToUpdate = true;
+            this.getRow().needToUpdate = true;
         },
         select: function() {
-            var workbenchModel = this.getRow().getAgregator().getWorkbanch();
+            var workbenchModel = this.getRow().getAgregator().getWorkbench();
             workbenchModel.selectedBlocks.addBlock(this);
             this.selected = true;
             this.notifyObservers();
@@ -1867,26 +1801,6 @@ boundary: {left : object/string right: object/string}
             /* TODO: ? move the metod to RowModel ?*/ 
             this.getRow().blockList.splice($.inArray(this, this.getRow().blockList), 1);
             this.getRow().needToUpdate = true;
-        },
-
-        
-        /* TODO: move to abstract model (create AbstractModel)*/
-        addObserver: function(observer) {
-            return this.observerList.push(observer);
-        },
-        removeObserver: function(observer) {
-            for (var index in this.observerList) {
-                if (observer == this.observerList[index]) {
-                    this.observerList.splice(index, 1);
-                }
-            }
-        },
-        notifyObservers: function() {
-            observerIterator = new ArrayIterator(this.observerList);
-            while (observerIterator.hasNext()) {
-                var observer = observerIterator.next();
-                observer.update();
-            }
         },
     });
 
@@ -1919,7 +1833,6 @@ boundary: {left : object/string right: object/string}
     AgregatorBlockModel.prototype = Object.create(AbstractBlockModel.prototype);
 
     $.extend(AgregatorBlockModel.prototype, {
-        /* TODO: ?new class ? AgregatedBlock method */
         isAgregationSolid: function() {
             var agregatedBlocks = this.getAgregatedBlocks();
 
@@ -1927,26 +1840,21 @@ boundary: {left : object/string right: object/string}
                 return false;
             }
 
-            for (rowNum = 0; rowNum < this.parent.parent.rowList.length; rowNum++) {
-                var positionIterator = new ArrayIterator(agregatedBlocks);
-                var positionInRow = false;
-                while (positionIterator.hasNext()) {
-                    var position = positionIterator.next();
+            var rowIterator = this.getRow().getAgregator().getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+                var blockInRow = false;
 
-                    if (position.row == rowNum) {
-                        positionInRow = position;
+                var blockIterator = new ArrayIterator(agregatedBlocks);
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+
+                    if (block.getRow() == row) {
+                        blockInRow = block;
                     }
                 }
 
-                if (!positionInRow) {
-                    return false;
-                }
-
-                var agregator = this.parent.parent;
-                var row = agregator.getRow(rowNum);
-                var block = row.getBlock(positionInRow.block);
-
-                if ( !this.start().equals(block.start()) || !this.end().equals(block.end()) ) {
+                if (!blockInRow || !this.start().equals(blockInRow.start()) || !this.end().equals(blockInRow.end()) ) {
                     return false;
                 }
             }
@@ -1956,7 +1864,7 @@ boundary: {left : object/string right: object/string}
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
     
-            var workbenchModel = this.getRow().getAgregator().getWorkbanch();
+            var workbenchModel = this.getRow().getAgregator().getWorkbench();
             var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
             while(blockIterator.hasNext()) {
                 var block = blockIterator.next();
@@ -1975,7 +1883,6 @@ boundary: {left : object/string right: object/string}
         },
     });
 
-
     /**
      * BlockMenuModel class
      */
@@ -1992,7 +1899,7 @@ boundary: {left : object/string right: object/string}
 
             this.addCommand(new CommandModel("delete", function(blockModel) {
                 blockModel.select();
-                var workbenchModel = blockModel.parent.parent.parent;
+                var workbenchModel = blockModel.getRow().getAgregator().getWorkbench();
                 workbenchModel.deleteSelectedBlocks();
             }));
         },
@@ -2137,6 +2044,34 @@ boundary: {left : object/string right: object/string}
 /*==============================================================================
 * Libraries
 *=============================================================================*/
+    /**
+    * AbstractModel
+    */
+    function AbstractModel () {
+        this.observerList = [];
+    }
+
+    $.extend(AbstractModel.prototype, {
+        addObserver: function(observer) {
+            return this.observerList.push(observer);
+        },
+        removeObserver: function(observer) {
+            for (var index in this.observerList) {
+                if (observer == this.observerList[index]) {
+                    this.observerList.splice(index, 1);
+                }
+            }
+        },
+        notifyObservers: function() {
+            var observerIterator = new ArrayIterator(this.observerList);
+            while (observerIterator.hasNext()) {
+                var observer = observerIterator.next();
+                observer.update();
+            }
+        },
+    });
+
+
     /**
     * AbstractView
     */
