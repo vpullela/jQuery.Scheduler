@@ -1704,13 +1704,11 @@ boundary: {left : object/string right: object/string}
             }
             
             if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
-
                 // merge to agregator block borders
-                /* TODO: 
-                 * duplication
-                 * getAgregatorBlock can be optimized
-                 * optimize comparation
-                 */
+                // TODO: 
+                // duplication
+                // getAgregatorBlock can be optimized
+                // optimize comparation
                 var agregatorBlock = this.getAgregatorBlock();
                 if (agregatorBlock) {
                     /* TODO: optimize comparation */
@@ -1741,14 +1739,11 @@ boundary: {left : object/string right: object/string}
             }
             
             if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
-
                 // merge to agregator block borders
-                /* TODO: 
-                 * duplication
-                 * getAgregatorBlock can be optimized
-                 * optimize comparation
-                 */
-
+                // TODO: 
+                // duplication
+                // getAgregatorBlock can be optimized
+                // optimize comparation
                 var agregatorBlock = this.getAgregatorBlock();
                 if (agregatorBlock) {
                     if (this.start().clone().addDays(days).compareTo(agregatorBlock.start()) >= 0) {
