@@ -315,7 +315,7 @@ boundary: {left : object/string right: object/string}
                 var rowDiv = $("<div>", {
                     "class": "planner-vtheader-agregate-row planner-nonselectable",
                     "css" : {
-                        "height" : this.options.cellHeight + "px"
+                        "height" : (this.options.cellHeight - 1) + "px"
                     }
                 });
                 this.getJquery().append(rowDiv);
@@ -840,8 +840,7 @@ boundary: {left : object/string right: object/string}
                 "css": {
                     "border" : 0,
                     "width" : (numberOfDays+1) * cellWidth + "px",
-                    "background-size" : cellWidth + "px " +  (cellHeight)  + "px",
-                    "background-position" : cellWidth + "px " +  (cellHeight + 1) + "px" }
+                    }
                 });
 
             this.setJquery(blocksDiv);
@@ -911,7 +910,9 @@ boundary: {left : object/string right: object/string}
                 "class": "planner-row",
                 "css" : {
                     "height": cellHeight + "px",
-                    "width": (this.numberOfDays+1) * cellWidth + "px"
+                    "width": (this.numberOfDays+1) * cellWidth + "px",
+                    "background-size" : cellWidth + "px " +  cellHeight  + "px",
+                    "background-position" : cellWidth + "px " +  cellHeight + "px"
                 }
             });
             // TODO:: data method
@@ -931,6 +932,7 @@ boundary: {left : object/string right: object/string}
                 "visibility": "hidden",
                 "height" : 0,
                 "padding" : 0,
+                "border-top" : "none", 
             });
         },
         show: function() {
@@ -938,6 +940,7 @@ boundary: {left : object/string right: object/string}
                 "visibility": "",
                 "height": this.options.cellHeight + "px",
                 "padding" : "",
+                "border-top" : "", 
             });
         },
         render: function() {
