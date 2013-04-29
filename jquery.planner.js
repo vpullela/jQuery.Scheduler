@@ -729,57 +729,56 @@ boundary: {left : object/string right: object/string}
         onResizeBlockStart: function(e, ui) {
             // select block on resizexs 
             var blockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            blockModel.isDragged = true;
             blockModel.select();
         },
         onResizeBlock: function(e, ui) {
-            /* TODO: duplication onDragBlock */
             var resizedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            // return if dragging is not horisontal
+            if (ui.helper.width() == resizedBlockModel.width) {
+                return;
+            }
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
                 blockModel.resize(ui.helper.position().left, ui.helper.width());
-                
-                if (blockModel != resizedBlockModel) {
-                    blockModel.notifyObservers();
-                }
             }
         },
         onResizeBlockStop: function(e, ui) {
+            var blockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            
+            blockModel.isDragged = false;
             this.model.updateSelectedBlocks();
         },
 
         onDragBlockStart: function(e, ui) {
         },
         onDragBlock: function(e, ui) {
-            // return if gragging is not horisontal
+            // return if dragging is not horisontal
             if (ui.helper.position().left == ui.position.left) {
                 return;
             }
-            
-            // select block on first movement
-            if (!this.isBlocksDragged) {
-                this.isBlocksDragged = true;
-                var draggedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+
+            // select block on first Horisontal movement
+            var draggedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            if (!draggedBlockModel.isDragged) {
+                draggedBlockModel.isDragged = true;
                 draggedBlockModel.select();
             }
             
-            /* TODO: duplication onResizeBlock */
-            var resizedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
                 blockModel.resize(ui.position.left, ui.helper.width());
-                if (blockModel != resizedBlockModel) {
-                    blockModel.notifyObservers();
-                }
             }
         },
         onDragBlockStop: function(e, ui) {
-            if (!this.isBlocksDragged) {
+            var blockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            if (!blockModel.isDragged) {
                 return;
             }
-            this.isBlocksDragged = false;
-
+            
+            blockModel.isDragged = false;
             this.model.updateSelectedBlocks();
         },
 
@@ -1600,6 +1599,7 @@ boundary: {left : object/string right: object/string}
         }
 
         this.selected = false;
+        this.isDragged = false;
         
         this.left = 0;
         this.width = 0;
@@ -1687,17 +1687,26 @@ boundary: {left : object/string right: object/string}
             this.width = width;
             this.left = left;
 
+            var blockChanged = false;
             if (deltaWidth == 0 && deltaLeft != 0)
             {
                 this.drag(deltaLeft / this.options.cellWidth);
+                blockChanged = true;
             }
             else if (deltaWidth != 0 && deltaLeft == 0 )
             {
                 this.resizeRight(deltaWidth / this.options.cellWidth);
+                blockChanged = true;
             }
             else if (deltaWidth != 0 && deltaLeft != 0)
             {
                 this.resizeLeft((-1) * deltaWidth / this.options.cellWidth)
+                blockChanged = true;
+            }
+            
+            /* check if block is moved by jquery facilities: to prevent double view update */
+            if (blockChanged && !this.isDragged) {
+                this.notifyObservers();
             }
         },
         stopResize: function() {
@@ -1712,33 +1721,12 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
-                // merge to agregator block borders
-                // TODO: 
-                // duplication
-                // getAgregatorBlock can be optimized
-                // optimize comparation
-                var agregatorBlock = this.getAgregatorBlock();
-                if (agregatorBlock) {
-                    /* TODO: optimize comparation */
-                    if (this.end().clone().addDays(days).compareTo(agregatorBlock.end()) <= 0) {
-                        this.end().addDays(days);
-                    } else {
-                        this.blockData.end = agregatorBlock.end().clone();
-                    }
-                    
-                    if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
-                        this.blockData.start = this.end().clone();
-                        this.getRow().needToUpdate = true;
-                        return;
-                    }
-                } else {
-                    return;
-                }
-            }
-
             this.start().addDays(days);
             this.getRow().needToUpdate = true;
+
+            if (this.start().compareTo(this.end()) > 0) {
+                this.end().addDays(days);
+            }
         },
         resizeRight: function(days) {
             if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
@@ -1747,32 +1735,12 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
-                // merge to agregator block borders
-                // TODO: 
-                // duplication
-                // getAgregatorBlock can be optimized
-                // optimize comparation
-                var agregatorBlock = this.getAgregatorBlock();
-                if (agregatorBlock) {
-                    if (this.start().clone().addDays(days).compareTo(agregatorBlock.start()) >= 0) {
-                        this.start().addDays(days);
-                    } else {
-                        this.blockData.start = agregatorBlock.start().clone();
-                    }
-                    
-                    if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
-                        this.blockData.end = this.start().clone();
-                        this.getRow().needToUpdate = true;
-                        return;
-                    }
-                } else {
-                    return;
-                }
-            }
-            
             this.end().addDays(days);
             this.getRow().needToUpdate = true;
+
+            if (this.end().compareTo(this.start()) < 0) {
+                this.start().addDays(days);
+            }
         },
         drag: function(days) {
             /* TODO: optimize date comparation */
@@ -1791,6 +1759,7 @@ boundary: {left : object/string right: object/string}
             this.end().addDays(days);
             this.getRow().needToUpdate = true;
         },
+        
         select: function() {
             var workbenchModel = this.getRow().getAgregator().getWorkbench();
             workbenchModel.selectedBlocks.addBlock(this);
@@ -1823,6 +1792,39 @@ boundary: {left : object/string right: object/string}
         getAgregatorBlock: function() {
             return this.agregatorBlock;
         },
+        fitToAgregator: function() {
+            var agregatorBlock = this.getAgregatorBlock();
+            var startDiff = agregatorBlock.start() - this.start();
+            
+            var blockChanged = false;
+            if (startDiff > 0) {
+                this.start().add({ "milliseconds": startDiff});
+                this.end().add({ "milliseconds": startDiff });
+
+                startDiff = 0;
+                blockChanged = true;
+                this.getRow().needToUpdate = true;
+            }
+
+            var endDiff = agregatorBlock.end() - this.end();
+            if (endDiff < 0) {
+                this.end().add({ "milliseconds": endDiff});
+                this.start().add({ "milliseconds": Math.max(endDiff, startDiff)});
+                
+                blockChanged = true;
+                this.getRow().needToUpdate = true;
+            }
+
+            if (blockChanged) {
+                this.notifyObservers();
+            }
+        },
+        resize: function(left, right) {
+            AbstractBlockModel.prototype.resize.apply(this, arguments);
+            if (!this.isDragged) {
+                this.fitToAgregator();
+            }
+        }
     });
 
     /**
