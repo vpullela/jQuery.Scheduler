@@ -751,8 +751,13 @@ boundary: {left : object/string right: object/string}
         onDragBlockStart: function(e, ui) {
         },
         onDragBlock: function(e, ui) {
-            // select block on horisontal drag 
-            if (!this.isBlocksDragged && ui.helper.position().left != ui.position.left) {
+            // return if gragging is not horisontal
+            if (ui.helper.position().left == ui.position.left) {
+                return;
+            }
+            
+            // select block on first movement
+            if (!this.isBlocksDragged) {
                 this.isBlocksDragged = true;
                 var draggedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
                 draggedBlockModel.select();
@@ -763,7 +768,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                blockModel.resize(ui.helper.position().left, ui.helper.width());
+                blockModel.resize(ui.position.left, ui.helper.width());
                 if (blockModel != resizedBlockModel) {
                     blockModel.notifyObservers();
                 }
