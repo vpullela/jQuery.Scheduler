@@ -1461,8 +1461,12 @@ boundary: {left : object/string right: object/string}
             this.blockList = [];
 
             for (blockNum in blockList) {
-                var block = new BlockModel(this, blockNum, blockList[blockNum]);
-                this.blockList.push(block);
+                try {
+                    var block = new BlockModel(this, blockNum, blockList[blockNum]);
+                    this.blockList.push(block);
+                } catch (e) {
+                    /* do nothing */
+                }
             }
 
             this.mergeBlocks();
