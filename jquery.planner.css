@@ -207,6 +207,7 @@ div.planner-ruller {
     background-color: #ffff00;
     opacity: 0.2;
     filter: alpha(opacity=20);
+    pointer-events: none;
 }
 
 div.planner-row {
