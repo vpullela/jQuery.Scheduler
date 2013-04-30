@@ -606,7 +606,18 @@ boundary: {left : object/string right: object/string}
             if (this.showWeekends && this.isWeekend()) {
                 day.addClass("planner-weekend");
             }
-            day.append(this.date.getDate());
+            
+            /* font size adjusting */
+            var date = this.date.getDate();
+            if (this.cellWidth < 9) {
+                date = "";
+            } else if (this.cellWidth < 12) {
+                day.css("font-size", "0.7em");
+            } else if (this.cellWidth < 17) {
+                day.css("font-size", "0.8em");
+            }
+
+            day.append(date);
 
             this.setJquery(day);
         },
