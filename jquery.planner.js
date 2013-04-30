@@ -61,7 +61,7 @@ boundary: {left : object/string right: object/string}
 
         /** Geometry Handling */
         // get the geometry properties from css
-        var cellSize = this.getCssProperty("planner-blocks", "background-size").split(" ");
+        var cellSize = this.getCssProperty("planner-workbench", "background-size").split(" ");
         var cellWidth = parseInt(cellSize[0]);
         var cellHeight = parseInt(cellSize[1]);
         var width = parseInt(this.getCssProperty("planner", "width"), 10);
@@ -424,7 +424,7 @@ boundary: {left : object/string right: object/string}
                     }
                 });
             this.unavailableDiv = $("<div>", {
-                "class": "planner-blocks-unavailable",
+                "class": "planner-workbench-unavailable",
                 "css": {
                     "border" : 0,
                     "width" : (unavailableDays * cellWidth)+ "px",
@@ -640,7 +640,7 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
 
             var blocksDiv = $("<div>", {
-                "class": "planner-blocks",
+                "class": "planner-workbench",
                 "css": {
                     "border" : 0,
                     "width" : (numberOfDays+1) * cellWidth + "px",
@@ -649,6 +649,20 @@ boundary: {left : object/string right: object/string}
                 });
 
             this.setJquery(blocksDiv);
+
+            /* current day ruller */
+            var rullerLeft = 0;
+            if (this.options.scrollToDate) {
+                rullerLeft = this.hzHeader.getGrid().getPosByDate(this.options.scrollToDate);
+            }
+            var rullerDiv = $("<div>", {
+                "class" : "planner-ruller",
+                "css": {
+                    "left" : rullerLeft + "px",
+                    "width" : cellWidth + "px",
+                }
+            });
+            this.getJquery().append(rullerDiv);
 
             this.render();
             this.setEvents();
