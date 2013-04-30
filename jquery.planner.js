@@ -1732,7 +1732,7 @@ boundary: {left : object/string right: object/string}
                 blockChanged = true;
             }
             
-            /* check if block is moved by jquery facilities: to prevent double view update */
+            /* isDragged checks if block is moved by jquery facilities: to prevent double view update */
             if (blockChanged && !this.isDragged) {
                 this.notifyObservers();
             }
@@ -1743,9 +1743,7 @@ boundary: {left : object/string right: object/string}
         },
 
         resizeLeft: function(days) {
-            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
-                this.blockData.start = this.options.boundary.left.clone();
-                this.getRow().needToUpdate = true;
+            if (this.fitToLeftBoundary(days)) {
                 return;
             }
             
@@ -1757,9 +1755,8 @@ boundary: {left : object/string right: object/string}
             }
         },
         resizeRight: function(days) {
-            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
-                this.blockData.end = this.options.boundary.right.clone();
-                this.getRow().needToUpdate = true;
+            if (this.fitToRightBoundary(days)) {
+                console.log("false");
                 return;
             }
             
@@ -1771,21 +1768,30 @@ boundary: {left : object/string right: object/string}
             }
         },
         drag: function(days) {
-            /* TODO: optimize date comparation */
-            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
-                this.blockData.start = this.options.boundary.left.clone();
-                this.getRow().needToUpdate = true;
-                return;
-            }
-            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
-                this.blockData.end = this.options.boundary.right.clone();
-                this.getRow().needToUpdate = true;
+            if (this.fitToLeftBoundary(days) || this.fitToRightBoundary(days)) {
                 return;
             }
 
             this.start().addDays(days);
             this.end().addDays(days);
             this.getRow().needToUpdate = true;
+        },
+        
+        fitToLeftBoundary: function(days) {
+            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
+                this.blockData.start = this.options.boundary.left.clone();
+                this.getRow().needToUpdate = true;
+                return true;
+            }
+            return false;
+        },
+        fitToRightBoundary: function(days) {
+            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
+                this.blockData.end = this.options.boundary.right.clone();
+                this.getRow().needToUpdate = true;
+                return true;
+            }
+            return false
         },
         
         select: function() {
@@ -1914,6 +1920,30 @@ boundary: {left : object/string right: object/string}
             } else {
                 return false;
             }
+        },
+        resizeLeft: function(days) {
+            if (this.fitToLeftBoundary(days)) {
+                return;
+            }
+            
+            if (this.start().colne().addDays(days).compareTo(this.end()) > 0) {
+                return;
+            }
+
+            this.start().addDays(days);
+            this.getRow().needToUpdate = true;
+        },
+        resizeRight: function(days) {
+            if (this.fitToRightBoundary(days)) {
+                return;
+            }
+            
+            if (this.end().clone().addDays(days).compareTo(this.start()) < 0) {
+                return;
+            }
+            
+            this.end().addDays(days);
+            this.getRow().needToUpdate = true;
         },
     });
 
