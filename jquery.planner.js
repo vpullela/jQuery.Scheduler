@@ -1881,7 +1881,7 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.start().colne().addDays(days).compareTo(this.end()) > 0) {
+            if (this.start().clone().addDays(days).compareTo(this.end()) > 0) {
                 return;
             }
 
