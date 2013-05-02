@@ -782,18 +782,15 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            //this.workbenchMenuView.showAt(this.model, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+            var data = {
+                workbenchModel: this.model,
+                event: e,
+            }
 
-            var element = $(e.currentTarget)
-            var startDate = this.model.grid.getDateByPos(e.pageX);
-            var position = element.data("position");
+            this.workbenchMenuView.showAt(data, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+            return;
 
-            var newBlockData = {
-                "start" : startDate,
-                "end" : startDate.clone()
-            };
 
-            this.model.addBlock(position, newBlockData);
         },
     });
 
@@ -1944,9 +1941,20 @@ boundary: {left : object/string right: object/string}
     }
     $.extend(WorkbenchMenuModel.prototype, {
         addDefaultComands: function() {
-            this.addCommand(new CommandModel("new", function(workbenchModel) {
-                blockModel.select();
+            this.addCommand(new CommandModel("new", function(data) {
+                var element = $(data.event.currentTarget)
+                var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
+                var position = element.data("position");
 
+                var newBlockData = {
+                    "start" : startDate,
+                    "end" : startDate.clone()
+                };
+
+                data.workbenchModel.addBlock(position, newBlockData);
+            }));
+            this.addCommand(new CommandModel("past", function(data) {
+                alert("in process");
             }));
         },
         addCommand: function(command) {
@@ -1969,8 +1977,8 @@ boundary: {left : object/string right: object/string}
         getName: function() {
             return this.name;
         },
-        execute: function(blockModel) {
-            this.callback(blockModel);
+        execute: function(data) {
+            this.callback(data);
         },
     });
 
