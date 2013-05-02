@@ -259,6 +259,7 @@ div.planner-block-menu-item {
     z-index: 100;
     margin: 1px;
     padding: 1px 4px 1px 4px;
+    cursor: pointer;
 }
 
 div.planner-block-menu-item.selected {
