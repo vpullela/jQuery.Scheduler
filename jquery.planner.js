@@ -406,9 +406,9 @@ boundary: {left : object/string right: object/string}
 
         render: function() {
             this.removeContent();
-            /* TODO: move GRID to a separete class to avoid hzHeader passing everywere s*/
-            this.hzHeader = new HzHeaderView(this.options, this.model);
-            var workbenchView = new WorkbenchView(this.options, this.model, this.hzHeader);
+
+            var hzHeader = new HzHeaderView(this.options, this.model);
+            var workbenchView = new WorkbenchView(this.options, this.model);
 
             var numberOfDays = this.options.boundary.getNumberOfDays();
             var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
@@ -435,15 +435,16 @@ boundary: {left : object/string right: object/string}
                 });
 
             this.contentArray.push(workbenchView);
+            this.contentArray.push(hzHeader);
 
-            this.appendJquery(this.hzHeader);
+            this.appendJquery(hzHeader);
             this.ganttViewBody.append(workbenchView.getJquery());
             this.ganttViewBody.append(this.unavailableDiv);
             this.getJquery().append(this.ganttViewBody);
         },
         scrollToDate: function(date) {
             // 500 - scroll speed
-            this.getJquery().animate({scrollLeft: this.hzHeader.getGrid().getPosByDate(date)}, 500);
+            this.getJquery().animate({scrollLeft: this.model.grid.getPosByDate(date)}, 500);
         },
 
         removeContent: function() {
@@ -457,10 +458,6 @@ boundary: {left : object/string right: object/string}
             }
             if (this.ganttViewBody) {
                 this.ganttViewBody.remove();
-            }
-            if (this.hzHeader) {
-                this.hzHeader.removeContent();
-                this.hzHeader.destroyJquery();
             }
         }
     });
@@ -483,6 +480,7 @@ boundary: {left : object/string right: object/string}
         _monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 
         _init: function() {
+            /*TODO: move getDatePeriod in model layer  */
             var dates = this.getDatePeriod();
             var numberOfDays = this.options.boundary.getNumberOfDays(true);
 
@@ -510,55 +508,13 @@ boundary: {left : object/string right: object/string}
             headerDiv.append(monthsDiv).append(daysDiv);
 
             this.setJquery(headerDiv);
+            
+            var grid = new Grid(this.options, this.daysArray);
+            this.model.grid = grid;
         },
 
         removeContent: function() {
             /* EMPTY */
-        },
-
-        getGrid: function() {
-            var grid = [];
-
-            var firstDayOffset = 0;
-            for (var i=0; i < this.daysArray.length; i++) {
-                var day = this.daysArray[i];
-                if (i == 0) {
-                    firstDayOffset = day.getJquery().offset().left;
-                }
-                grid.push({
-                    "date": day.date,
-                    "offset": firstDayOffset + this.cellWidth * i
-                });
-            }
-
-            grid.cellWidth = this.cellWidth;
-
-            grid.getDateByPos = function (posX, halfUp) {
-                var shift = grid.cellWidth;
-
-                if (halfUp) {
-                    shift = shift/2;
-                }
-
-                var date = grid[grid.length-1].date.clone();
-                for(var i=0; i < grid.length; i++) {
-                    if (grid[i].offset + shift > posX) {
-                        date = grid[i].date.clone();
-                        break;
-                    }
-                }
-                return date.clone();
-            },
-            grid.getPosByDate = function (date) {
-                for(var i=0; i < grid.length; i++) {
-                    if (date.compareTo(grid[i].date) < 0) {
-                        return grid[i].offset - grid.cellWidth;
-                    }
-                }
-                return grid[grid.length-1].offset;
-            }
-
-            return grid;
         },
 
         // Creates a 3 dimensional array [year][month][day] of every day
@@ -630,10 +586,9 @@ boundary: {left : object/string right: object/string}
     /**
      * WorkbenchView class
      */
-    function WorkbenchView(options, model, hzHeader) {
+    function WorkbenchView(options, model) {
         this.options = options;
         this.model = model;
-        this.hzHeader = hzHeader;
 
         this.cellWidth = this.options.cellWidth;
         this.contentArray = [];
@@ -664,7 +619,7 @@ boundary: {left : object/string right: object/string}
             /* current day ruller */
             var rullerLeft = 0;
             if (this.options.scrollToDate) {
-                rullerLeft = this.hzHeader.getGrid().getPosByDate(this.options.scrollToDate);
+                rullerLeft = this.model.grid.getPosByDate(this.options.scrollToDate);
             }
             var rullerDiv = $("<div>", {
                 "class" : "planner-ruller",
@@ -684,6 +639,9 @@ boundary: {left : object/string right: object/string}
 
             this.blockMenuView = new BlockMenuView(this.options, this.model.blockMenuModel);
             this.appendJquery(this.blockMenuView);
+            
+            this.workbenchMenuView = new BlockMenuView(this.options, this.model.workbenchMenuModel);
+            this.appendJquery(this.workbenchMenuView);
 
             var agregatorIterator = this.model.getIterator();
             while (agregatorIterator.hasNext()) {
@@ -759,6 +717,7 @@ boundary: {left : object/string right: object/string}
         },
         onResizeBlock: function(e, ui) {
             var resizedBlockModel = this.model.getBlockByPosition(ui.helper.data("position"));
+            
             // return if dragging is not horisontal
             if (ui.helper.width() == resizedBlockModel.width) {
                 return;
@@ -823,9 +782,10 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
+            //this.workbenchMenuView.showAt(this.model, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+
             var element = $(e.currentTarget)
-            var grid = this.hzHeader.getGrid();
-            var startDate = grid.getDateByPos(e.pageX);
+            var startDate = this.model.grid.getDateByPos(e.pageX);
             var position = element.data("position");
 
             var newBlockData = {
@@ -1062,10 +1022,7 @@ boundary: {left : object/string right: object/string}
             }
         },
         update:  function() {
-
             this.render();
-            /* TODO: user render to update status */
-            //this.blockController.select();
         }
     });
 
@@ -1178,6 +1135,7 @@ boundary: {left : object/string right: object/string}
         this.data = [];
 
         this.blockMenuModel = new BlockMenuModel();
+        this.workbenchMenuModel = new WorkbenchMenuModel();
         this.selectedBlocks = new SelectedBlocks();
     }
 
@@ -1967,6 +1925,7 @@ boundary: {left : object/string right: object/string}
                 workbenchModel.deleteSelectedBlocks();
             }));
         },
+        /*TODO: abstracat model menu */
         addCommand: function(command) {
             this.commandList.push(command);
         },
@@ -1974,6 +1933,30 @@ boundary: {left : object/string right: object/string}
             return new ArrayIterator(this.commandList);
         }
     });
+    
+    /**
+     * WorkbenchMenuModel class
+     */
+    function WorkbenchMenuModel() {
+        this.commandList = [];
+
+        this.addDefaultComands();
+    }
+    $.extend(WorkbenchMenuModel.prototype, {
+        addDefaultComands: function() {
+            this.addCommand(new CommandModel("new", function(workbenchModel) {
+                blockModel.select();
+
+            }));
+        },
+        addCommand: function(command) {
+            this.commandList.push(command);
+        },
+        getIterator: function() {
+            return new ArrayIterator(this.commandList);
+        }
+    });
+    
 
     /**
      * CommandModel class
@@ -2053,6 +2036,62 @@ boundary: {left : object/string right: object/string}
         getIterator: function() {
             return new ArrayIterator(this.selectedBlocks);
         },
+    });
+
+    /**
+     * Grid class
+     */
+    function Grid(options, daysArray) {
+        this.options = options;
+        this.daysArray = daysArray;
+
+        this.grid = [];
+    }
+    $.extend(Grid.prototype, {
+        calculateOffset: function() {
+            this.grid.length = 0;
+            var firstDayOffset = 0;
+            for (var i=0; i < this.daysArray.length; i++) {
+                var day = this.daysArray[i];
+                if (i == 0) {
+                    firstDayOffset = day.getJquery().offset().left;
+                }
+                this.grid.push({
+                    "date": day.date,
+                    "offset": firstDayOffset + this.options.cellWidth * i
+                });
+            }
+
+        },
+
+        getDateByPos: function (posX, halfUp) {
+            this.calculateOffset();
+
+            var shift = this.options.cellWidth;
+
+            if (halfUp) {
+                shift = shift/2;
+            }
+
+            var date = this.grid[this.grid.length-1].date.clone();
+            for(var i=0; i < this.grid.length; i++) {
+                if (this.grid[i].offset + shift > posX) {
+                    date = this.grid[i].date.clone();
+                    break;
+                }
+            }
+            return date.clone();
+        },
+        getPosByDate: function (date) {
+            this.calculateOffset();
+
+            for(var i=0; i < this.grid.length; i++) {
+                if (date.compareTo(this.grid[i].date) < 0) {
+                    return this.grid[i].offset - this.options.cellWidth;
+                }
+            }
+            return this.grid[this.grid.length-1].offset;
+        }
     });
 
     /**
