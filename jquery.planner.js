@@ -1810,7 +1810,7 @@ boundary: {left : object/string right: object/string}
         },
         resize: function(left, right) {
             AbstractBlockModel.prototype.resize.apply(this, arguments);
-            if (!this.isDragged) {
+            if (this.getAgregatorBlock().isDragged) {
                 this.fitToAgregator();
             }
         }
