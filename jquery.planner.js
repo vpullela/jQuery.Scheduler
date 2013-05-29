@@ -985,7 +985,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
-            var size = DateUtils.daysBetween(this.model.start(), this.model.end()) + 1;
+            var size = DateUtils.daysBetween(this.model.start(), this.model.end());
             var offset = DateUtils.daysBetween(this.options.boundary.getLeft(), this.model.start());
 
             this.getJquery().css({
@@ -1948,7 +1948,7 @@ boundary: {left : object/string right: object/string}
 
                 var newBlockData = {
                     "start" : startDate,
-                    "end" : startDate.clone()
+                    "end" : startDate.clone().addDays(1)
                 };
 
                 data.workbenchModel.addBlock(position, newBlockData);
