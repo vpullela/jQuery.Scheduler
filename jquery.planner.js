@@ -1563,7 +1563,7 @@ boundary: {left : object/string right: object/string}
             }
             if (this.start().compareTo(this.options.boundary.getRight()) > 0
                 && this.end().compareTo(this.options.boundary.getRight()) > 0) {
-                throw "wrond period";
+                throw "wrong period";
             }
             if (this.start().compareTo(this.options.boundary.getLeft()) < 0) {
                 this.blockData.start = this.options.boundary.getLeft().clone();
