@@ -40,8 +40,9 @@
             var chart = $("#chart").planner({
                                             width: 900,
                                             showWeekends: true,
-                                            expandBorder: true,
-                                            scrollToDate: "2013-02-01",
+                                            expandBorder: false,
+                                            scrollToDate: "2013-06-11",
+                                            boundary: {left: "2013-06-01", right: "2013-06-20"}
                                         });
 
             chart.planner("setData", plannerData );

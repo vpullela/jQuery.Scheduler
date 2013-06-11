@@ -1456,7 +1456,7 @@ boundary: {left : object/string right: object/string}
         mergeBlocks: function() {
             this.blockList = this.sortBlockList(this.blockList);
             
-            var previousBlock = false;
+            var previousBlock = undefined;
             
             var blockToDelete = [];
             var blockIterator = this.getIterator();
@@ -1465,7 +1465,7 @@ boundary: {left : object/string right: object/string}
                 if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
                     blockToDelete.push(block);
                 }
-                else if (previousBlock && previousBlock.end().clone().addDays(1).compareTo(block.start()) >= 0) {
+                else if (previousBlock && previousBlock.end().clone().compareTo(block.start()) >= 0) {
                     previousBlock.blockData.end = block.end().clone();
                     blockToDelete.push(block);
                 }
@@ -1506,7 +1506,7 @@ boundary: {left : object/string right: object/string}
             
             this.blockList = [];
 
-            var agregatorBlock = false;
+            var agregatorBlock = undefined;
             var order = 0;
 
             var blockIterator = new ArrayIterator(newBlockList);
@@ -1517,7 +1517,7 @@ boundary: {left : object/string right: object/string}
                     agregatorBlock.blockData.agregatedBlocks.push(block);
                     block.agregatorBlock = agregatorBlock;
                 }
-                else if (agregatorBlock && agregatorBlock.end().clone().addDays(1).compareTo(block.start()) >= 0) {
+                else if (agregatorBlock && agregatorBlock.end().clone().compareTo(block.start()) >= 0) {
                     /* TODO: add 2 setter to update all the agregated blocks and just for agregator */
                     agregatorBlock.blockData.end = block.end().clone();
                     agregatorBlock.blockData.agregatedBlocks.push(block);
