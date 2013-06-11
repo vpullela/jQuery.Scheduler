@@ -410,37 +410,11 @@ boundary: {left : object/string right: object/string}
             var hzHeader = new HzHeaderView(this.options, this.model);
             var workbenchView = new WorkbenchView(this.options, this.model);
 
-            var numberOfDays = this.options.boundary.getNumberOfDays();
-            var numberOfDaysAdj = this.options.boundary.getNumberOfDays(true);
-            var cellWidth = this.options.cellWidth;
-            var cellHeight = this.options.cellHeight;
-            var numberOfRows = this.model.getNumberOfRows();
-
-            var unavailableDays = numberOfDaysAdj - numberOfDays;
-            this.ganttViewBody = $("<div>", {
-                "class" : "planner-body",
-                "css" : {
-                    "width" : (numberOfDaysAdj+1) * cellWidth  + "px",
-                    }
-                });
-            this.unavailableDiv = $("<div>", {
-                "class": "planner-workbench-unavailable",
-                "css": {
-                    "border" : 0,
-                    "width" : (unavailableDays * cellWidth)+ "px",
-                    "height" : (numberOfRows * cellHeight) + "px",
-                    "background-size" : cellWidth + "px " +  cellHeight  + "px",
-                    "background-position" : cellWidth + "px " +  (cellHeight + 1) + "px"
-                    }
-                });
-
             this.contentArray.push(workbenchView);
             this.contentArray.push(hzHeader);
 
             this.appendJquery(hzHeader);
-            this.ganttViewBody.append(workbenchView.getJquery());
-            this.ganttViewBody.append(this.unavailableDiv);
-            this.getJquery().append(this.ganttViewBody);
+            this.appendJquery(workbenchView);
         },
         scrollToDate: function(date) {
             // 500 - scroll speed
@@ -453,12 +427,6 @@ boundary: {left : object/string right: object/string}
                 this.destroyJquery();
             });
             this.contentArray = []
-            if (this.unavailableDiv) {
-                this.unavailableDiv.remove();
-            }
-            if (this.ganttViewBody) {
-                this.ganttViewBody.remove();
-            }
         }
     });
 
@@ -601,7 +569,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(WorkbenchView.prototype, {
         _init: function() {
-            var numberOfDays = this.options.boundary.getNumberOfDays();
+            var numberOfDays = this.options.boundary.getNumberOfDays(true);
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -813,7 +781,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(AgregatorView.prototype, {
         _init: function() {
-            var numberOfDays = this.options.boundary.getNumberOfDays();
+            var numberOfDays = this.options.boundary.getNumberOfDays(true);
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -833,6 +801,32 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
+            // Unavailable Zones
+            /** TODO:: add left unavailable zone functinality */
+            /*
+            this.leftUnavailableZone = $("<div>", {
+            "class": "planner-unavailable",
+            "css": {
+                "width" : (3) * this.options.cellWidth + "px",
+                "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
+                }
+            });
+            */
+            var unavailableDaysNumber = this.options.boundary.getNumberOfDays(true) - this.options.boundary.getNumberOfDays();
+            if (unavailableDaysNumber > 0) {
+                this.rightUnavailableZone = $("<div>", {
+                "class": "planner-unavailable",
+                "css": {
+                    "left" : (this.options.boundary.getNumberOfDays(true) - unavailableDaysNumber) * this.options.cellWidth + "px",
+                    "width" : (unavailableDaysNumber + 1) * this.options.cellWidth + "px",
+                    "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
+                    }
+                });
+            }
+            this.getJquery().append(this.leftUnavailableZone);
+            this.getJquery().append(this.rightUnavailableZone);
+            
+            // rows
             this.agregatorRowView = new RowView(this.options, this.model.getAgregatorRow());
             this.appendJquery(this.agregatorRowView);
 
@@ -860,6 +854,14 @@ boundary: {left : object/string right: object/string}
                 this.agregatorRowView.removeContent();
                 this.agregatorRowView.destroyJquery();
                 this.agregatorRowView.stopObserveModel();
+            }
+
+            if (this.leftUnavailableZone) {
+                this.leftUnavailableZone.remove();
+            }
+            
+            if (this.rightUnavailableZone) {
+                this.rightUnavailableZone.remove();
             }
 
             this.contentArray = [];
@@ -1711,7 +1713,6 @@ boundary: {left : object/string right: object/string}
         },
         resizeRight: function(days) {
             if (this.fitToRightBoundary(days)) {
-                console.log("false");
                 return;
             }
             
