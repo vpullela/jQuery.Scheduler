@@ -287,7 +287,10 @@ boundary: {left : object/string right: object/string}
     $.extend(VtHeaderAgregatorView.prototype, {
         _init: function() {
             var agregatorDiv = $("<div>", {
-                "class": "planner-vtheader-agregator"
+                "class": "planner-vtheader-agregator",
+                "css" : {
+                    "height": this.options.cellHeight + "px"
+                }
             });
             agregatorDiv.data("position", {agregator: this.model.order});
 
@@ -300,8 +303,6 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            this.getJquery().css("height", this.options.cellHeight * this.model.getNumberOfRows() + "px");
-
             var agregatorNameDiv = $("<div>", {
                 "class": "planner-vtheader-agregator-name planner-nonselectable"
             });
@@ -310,35 +311,42 @@ boundary: {left : object/string right: object/string}
 
             var rowIterator = this.model.getIterator();
 
-            if (this.model.expanded) {
-                /* TODO:: (duplicaion) make agregatorRow iterable */
+            /* TODO:: (duplicaion) make agregatorRow iterable */
+            var rowDiv = $("<div>", {
+                "class": "planner-vtheader-agregate-row planner-nonselectable",
+                "css" : {
+                    "height" : (this.options.cellHeight - 1) + "px"
+                }
+            });
+            this.getJquery().append(rowDiv);
+
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
                 var rowDiv = $("<div>", {
-                    "class": "planner-vtheader-agregate-row planner-nonselectable",
+                    "class": "planner-vtheader-row planner-nonselectable",
                     "css" : {
-                        "height" : (this.options.cellHeight - 1) + "px"
+                        "height" : this.options.cellHeight + "px"
                     }
                 });
+                /*TODO:: add getters/setters to model */
+                rowDiv.append(row.metadata.name);
                 this.getJquery().append(rowDiv);
+            }
 
-                while (rowIterator.hasNext()) {
-                    var row = rowIterator.next();
-                    var rowDiv = $("<div>", {
-                        "class": "planner-vtheader-row planner-nonselectable",
-                        "css" : {
-                            "height" : this.options.cellHeight + "px"
-                        }
-                    });
-                    /*TODO:: add getters/setters to model */
-                    rowDiv.append(row.metadata.name);
-                    this.getJquery().append(rowDiv);
-                }
+            this.toggleSlide();
+        },
+        toggleSlide: function() {
+            if (this.model.expanded) {
+                this.getJquery().animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+            } else {
+                this.getJquery().animate({height: this.options.cellHeight});
             }
         },
         removeContent: function() {
             this.getJquery().empty();
         },
         update: function() {
-            this.render();
+            this.toggleSlide();
         }
     });
 
