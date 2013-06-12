@@ -888,7 +888,9 @@ boundary: {left : object/string right: object/string}
                     rowView.show();
                 }
                 
-                this.rightUnavailableZone.animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+                if (this.rightUnavailableZone) {
+                    this.rightUnavailableZone.animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+                }
             } else {
                 this.getJquery().animate({height: this.options.cellHeight});
 
@@ -898,7 +900,9 @@ boundary: {left : object/string right: object/string}
                     rowView.hide();
                 }
                 
-                this.rightUnavailableZone.animate({height: this.options.cellHeight});
+                if (this.rightUnavailableZone) {
+                    this.rightUnavailableZone.animate({height: this.options.cellHeight});
+                }
             }
         },
         update: function() {
@@ -948,7 +952,7 @@ boundary: {left : object/string right: object/string}
         },
         hide: function() {
             this.getJquery().css({
-                "z-index" : -10
+                "z-index" : 0
             });
         },
         show: function() {
