@@ -798,6 +798,7 @@ boundary: {left : object/string right: object/string}
                 "css": {
                     "border" : 0,
                     "width" : (numberOfDays+1) * cellWidth + "px",
+                    "height" : this.options.cellHeight + "px",
                     }
                 });
 
@@ -831,6 +832,7 @@ boundary: {left : object/string right: object/string}
                     }
                 });
             }
+            
             this.getJquery().append(this.leftUnavailableZone);
             this.getJquery().append(this.rightUnavailableZone);
             
@@ -846,6 +848,8 @@ boundary: {left : object/string right: object/string}
                 this.appendJquery(rowView);
                 this.contentArray.push(rowView);
             }
+            
+            this.toggleSlide();
         },
         removeContent: function() {
             /* TODO: WORKAROUND bug with selected while toggeling */
@@ -874,8 +878,31 @@ boundary: {left : object/string right: object/string}
 
             this.contentArray = [];
         },
+        toggleSlide: function() {
+            if (this.model.expanded) {
+                this.getJquery().animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+
+                var rowViewIterator = new ArrayIterator(this.contentArray);
+                while(rowViewIterator.hasNext()) {
+                    rowView = rowViewIterator.next();
+                    rowView.show();
+                }
+                
+                this.rightUnavailableZone.animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+            } else {
+                this.getJquery().animate({height: this.options.cellHeight});
+
+                var rowViewIterator = new ArrayIterator(this.contentArray);
+                while(rowViewIterator.hasNext()) {
+                    rowView = rowViewIterator.next();
+                    rowView.hide();
+                }
+                
+                this.rightUnavailableZone.animate({height: this.options.cellHeight});
+            }
+        },
         update: function() {
-            this.render();
+            this.toggleSlide();
         }
     });
 
@@ -921,18 +948,12 @@ boundary: {left : object/string right: object/string}
         },
         hide: function() {
             this.getJquery().css({
-                "visibility": "hidden",
-                "height" : 0,
-                "padding" : 0,
-                "border-top" : "none", 
+                "z-index" : -10
             });
         },
         show: function() {
             this.getJquery().css({
-                "visibility": "",
-                "height": this.options.cellHeight + "px",
-                "padding" : "",
-                "border-top" : "", 
+                "z-index" : ""
             });
         },
         render: function() {
@@ -1258,11 +1279,6 @@ boundary: {left : object/string right: object/string}
                 agregator.update();
             }
         },
-
-        getNumberOfRows: function() {
-            return this.data.length;
-        },
-
         getIterator: function() {
             return new ArrayIterator(this.data);
         }
@@ -1332,10 +1348,7 @@ boundary: {left : object/string right: object/string}
             return this.metadata.name;
         },
         getNumberOfRows: function() {
-            if (this.expanded) {
-                return this.rowList.length + 1;
-            }
-            return 1;
+            return this.rowList.length + 1;
         },
         update: function() {
             var needToUpdate = false
