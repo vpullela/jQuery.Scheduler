@@ -1982,9 +1982,10 @@ boundary: {left : object/string right: object/string}
 
                 data.workbenchModel.addBlock(position, newBlockData);
             }));
-            this.addCommand(new CommandModel("past", function(data) {
+            /** TODO: past operation */
+            /*this.addCommand(new CommandModel("past", function(data) {
                 alert("in process");
-            }));
+            }));*/
         },
         addCommand: function(command) {
             this.commandList.push(command);
