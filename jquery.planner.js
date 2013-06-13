@@ -1238,6 +1238,9 @@ boundary: {left : object/string right: object/string}
         },
         addBlock: function(position, blockData) {
             var agregator = this.getAgregator(position.agregator);
+            if (!agregator) {
+                return false;
+            }
             /*TODO: optimize if statement */
             if (position.row == -1) {
                 var rowIterator = agregator.getIterator();
@@ -1252,8 +1255,10 @@ boundary: {left : object/string right: object/string}
                     row.notifyObservers();
                 }
             } else {
-
                 var row = agregator.getRow(position.row);
+                if (!row) {
+                    return false;
+                }
                 var blockList = row.getBlockList();
 
                 blockList.push(blockData);
@@ -1972,8 +1977,9 @@ boundary: {left : object/string right: object/string}
         addDefaultComands: function() {
             this.addCommand(new CommandModel("new", function(data) {
                 var element = $(data.event.currentTarget)
-                var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
                 var position = element.data("position");
+
+                var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
 
                 var newBlockData = {
                     "start" : startDate,
@@ -1983,9 +1989,44 @@ boundary: {left : object/string right: object/string}
                 data.workbenchModel.addBlock(position, newBlockData);
             }));
             /** TODO: past operation */
-            /*this.addCommand(new CommandModel("past", function(data) {
-                alert("in process");
-            }));*/
+            this.addCommand(new CommandModel("past", function(data) {
+                var element = $(data.event.currentTarget)
+                var position = element.data("position");
+                position.row = position.row < 0 ? 0 : position.row;
+
+                var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
+                var startDateDiff = undefined;
+            
+                /** TODO:: optimize sort call*/
+                data.workbenchModel.selectedBlocks.sort();
+
+                var selectedBlockIterator = data.workbenchModel.selectedBlocks.getIterator();
+                while (selectedBlockIterator.hasNext()) {
+                    var selectedBlock = selectedBlockIterator.next();
+
+                    if (selectedBlock.getPosition().row == -1) {
+                        continue;
+                    }
+
+                    if (startDateDiff === undefined) {
+                        startDateDiff = DateUtils.daysBetween(selectedBlock.start(), startDate);
+                        agregatorDiff = position.agregator - selectedBlock.getPosition().agregator;
+                        rowDiff = position.row - selectedBlock.getPosition().row;
+                    }
+
+                    var newPosition = {
+                        "agregator" : parseInt(selectedBlock.getPosition().agregator, 10) + agregatorDiff,
+                        "row" : parseInt(selectedBlock.getPosition().row, 10) + rowDiff 
+                    }
+                    
+                    var newBlockData = {
+                        "start" : selectedBlock.start().clone().addDays(startDateDiff),
+                        "end" : selectedBlock.end().clone().addDays(startDateDiff)
+                    };
+
+                    data.workbenchModel.addBlock(newPosition, newBlockData);
+                }
+            }));
         },
         addCommand: function(command) {
             this.commandList.push(command);
@@ -2033,6 +2074,7 @@ boundary: {left : object/string right: object/string}
      */
     function SelectedBlocks() {
         this.selectedBlocks = [];
+        this.isSorted = false;
     }
     $.extend(SelectedBlocks.prototype, {
         addBlock: function(block) {
@@ -2041,6 +2083,7 @@ boundary: {left : object/string right: object/string}
             }
 
             this.selectedBlocks.push(block);
+            this.isSorted = false;
         },
 
         isSelected: function(block) {
@@ -2054,6 +2097,43 @@ boundary: {left : object/string right: object/string}
                 }
             }
             return false;
+        },
+        
+        sort: function() {
+            if (this.isSorted) {
+                return;
+            }
+            this.selectedBlocks.sort(function(leftBlock, rightBlock) {
+                leftPosition = leftBlock.getPosition();
+                rightPosition = rightBlock.getPosition();
+                
+                leftPosition.agregator = parseInt(leftPosition.agregator, 10);
+                rightPosition.agregator = parseInt(rightPosition.agregator, 10);
+                if (leftPosition.agregator < rightPosition.agregator) {
+                    return -1;
+                } else if (leftPosition.agregator > rightPosition.agregator) {
+                    return 1;
+                }
+                
+                leftPosition.row = parseInt(leftPosition.row, 10);
+                rightPosition.row = parseInt(rightPosition.row, 10);
+                if (leftPosition.row < rightPosition.row) {
+                    return -1;
+                } else if (leftPosition.row > rightPosition.row) {
+                    return 1;
+                }
+
+                leftPosition.block = parseInt(leftPosition.block, 10);
+                rightPosition.block = parseInt(rightPosition.block, 10);
+                if (leftPosition.block < rightPosition.block) {
+                    return -1;
+                } else if (leftPosition.block > rightPosition.block) {
+                    return 1;
+                }
+
+                return 0
+            });
+            this.isSorted = true;
         },
 
         isEmpty: function() {
@@ -2293,10 +2373,19 @@ boundary: {left : object/string right: object/string}
         daysBetween: function (start, end) {
             if (!start || !end) { return 0; }
             start = Date.parse(start); end = Date.parse(end);
+            
+            var multiplicator = 1;
+            if (start.compareTo(end) > 0) {
+                var temp = start;
+                start = end;
+                end = temp;
+                multiplicator = -1;
+            }
+            
             if (start.getYear() == 1901 || end.getYear() == 8099) { return 0; }
             var count = 0, date = start.clone();
             while (date.compareTo(end) == -1) { count = count + 1; date.addDays(1); }
-            return count;
+            return multiplicator * count;
         },
         convertToDate: function(date, format) {
             if (typeof date == "string") {
