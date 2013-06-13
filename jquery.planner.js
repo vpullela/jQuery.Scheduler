@@ -1992,10 +1992,10 @@ boundary: {left : object/string right: object/string}
             this.addCommand(new CommandModel("past", function(data) {
                 var element = $(data.event.currentTarget)
                 var position = element.data("position");
-                position.row = position.row < 0 ? 0 : position.row;
 
                 var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
                 var startDateDiff = undefined;
+                var rowDiff = undefined;
             
                 /** TODO:: optimize sort call*/
                 data.workbenchModel.selectedBlocks.sort();
@@ -2004,14 +2004,17 @@ boundary: {left : object/string right: object/string}
                 while (selectedBlockIterator.hasNext()) {
                     var selectedBlock = selectedBlockIterator.next();
 
-                    if (selectedBlock.getPosition().row == -1) {
-                        continue;
-                    }
-
                     if (startDateDiff === undefined) {
                         startDateDiff = DateUtils.daysBetween(selectedBlock.start(), startDate);
                         agregatorDiff = position.agregator - selectedBlock.getPosition().agregator;
-                        rowDiff = position.row - selectedBlock.getPosition().row;
+                    }
+                    
+                    if (position.row == -1 && selectedBlock.getPosition().row == -1) {
+                        continue;
+                    }
+
+                    if (rowDiff === undefined) {
+                        rowDiff = position.row == -1 ? 0 : position.row - selectedBlock.getPosition().row;
                     }
 
                     var newPosition = {
