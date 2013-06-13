@@ -232,6 +232,11 @@ div.planner-block {
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
+
+div.planner-block.disabled {
+    background-color: #F0F0F0!important;
+}
+
 /* workaround for block menu */
 div.planner-block > div.ui-resizable-handle{
     z-index: 99;

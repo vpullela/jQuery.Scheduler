@@ -76,6 +76,7 @@ boundary: {left : object/string right: object/string}
         options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd";
         options.expandBodrer   = options.expandBorder   && true;         // false
         options.mergeNeighbors = options.mergeNeighbors && true;         // false
+        options.disabledPast   = options.disabledPast   && true;         // false
 
         // calculabe options
         options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
@@ -648,11 +649,11 @@ boundary: {left : object/string right: object/string}
         setEvents: function() {
             /* TODO: replace selectors */
             /* TODO: ?undelegate events on removeContent */
-            this.getJquery().delegate("div.planner-block",
+            this.getJquery().delegate("div:not(.disabled).planner-block",
                 "mouseover",
                 $.proxy(this.onMouseover, this));
 
-            this.getJquery().delegate("div.planner-block",
+            this.getJquery().delegate("div:not(.disabled).planner-block",
                 "click",
                 $.proxy(this.onClickOnBlock, this));
 
@@ -758,6 +759,13 @@ boundary: {left : object/string right: object/string}
                 this.model.selectedBlocks.empty();
                 return;
             }
+            
+            if (this.options.disabledPast && this.options.scrollToDate) { 
+                var clickDate = this.model.grid.getDateByPos(e.pageX);
+                if (clickDate.compareTo(this.options.scrollToDate) < 0) {
+                    return;
+                }
+            }
 
             var data = {
                 workbenchModel: this.model,
@@ -766,8 +774,6 @@ boundary: {left : object/string right: object/string}
 
             this.workbenchMenuView.showAt(data, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
             return;
-
-
         },
     });
 
@@ -1005,15 +1011,23 @@ boundary: {left : object/string right: object/string}
 
     $.extend(BlockView.prototype, {
         _init: function() {
-            this.block = $("<div>", {
+            var block = $("<div>", {
                 "class": "planner-block"
             });
 
-            this.setJquery(this.block);
+            // block in the past not active
+            if (this.options.disabledPast && this.options.scrollToDate) {
+                if (this.model.end().compareTo(this.options.scrollToDate) <= 0) {
+                    block.addClass("disabled");
+                }
+            }
+
+            this.setJquery(block);
             
             // duration
             this.textBlock = $("<div>", { "class": "planner-block-text" });
             this.textBlock.addClass("planner-nonselectable");
+            
             this.getJquery().append(this.textBlock);
             
             this.render();
