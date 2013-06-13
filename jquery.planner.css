@@ -49,6 +49,10 @@ div.planner-vtheader-agregator.last {
     border-bottom: 1px solid #d0d0d0;
 }
 
+div.planner-nonselectable {
+    cursor: default;
+}
+
 div.planner-nonselectable::-selection  {
     background: rgba(0,0,0,0);
 }
