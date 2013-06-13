@@ -68,13 +68,14 @@ boundary: {left : object/string right: object/string}
         var vtHeaderWidth = parseInt(this.getCssProperty("planner-vtheader", "width"), 10);
 
         // set default geometry (order: params -> css -> hardcode)
-        options.cellWidth     = options.cellWidth     || cellWidth     || 21;
-        options.cellHeight    = options.cellHeight    || cellHeight    || 32;
-        options.width         = options.width         || width         || 600;
-        options.vtHeaderWidth = options.vtHeaderWidth || vtHeaderWidth || 100;
-        options.showWeekends  = options.showWeekends  && true;         // false
-        options.dateFormat    = options.dateFormat                     || "yyyy-MM-dd";
-        options.expandBodrer  = options.expandBorder  && true;         // false
+        options.cellWidth      = options.cellWidth      || cellWidth     || 21;
+        options.cellHeight     = options.cellHeight     || cellHeight    || 32;
+        options.width          = options.width          || width         || 600;
+        options.vtHeaderWidth  = options.vtHeaderWidth  || vtHeaderWidth || 100;
+        options.showWeekends   = options.showWeekends   && true;         // false
+        options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd";
+        options.expandBodrer   = options.expandBorder   && true;         // false
+        options.mergeNeighbors = options.mergeNeighbors && true;         // false
 
         // calculabe options
         options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
@@ -1492,7 +1493,8 @@ boundary: {left : object/string right: object/string}
                 if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
                     blockToDelete.push(block);
                 }
-                else if (previousBlock && previousBlock.end().clone().compareTo(block.start()) >= 0) {
+                else if (previousBlock && previousBlock.end().clone().compareTo(block.start()) > 0 ||
+                        (this.options.mergeNeighbors && previousBlock && previousBlock.end().clone().compareTo(block.start()) == 0)) {
                     previousBlock.blockData.end = block.end().clone();
                     blockToDelete.push(block);
                 }
@@ -1544,7 +1546,8 @@ boundary: {left : object/string right: object/string}
                     agregatorBlock.blockData.agregatedBlocks.push(block);
                     block.agregatorBlock = agregatorBlock;
                 }
-                else if (agregatorBlock && agregatorBlock.end().clone().compareTo(block.start()) >= 0) {
+                else if (agregatorBlock && agregatorBlock.end().clone().compareTo(block.start()) > 0 ||
+                        (this.options.mergeNeighbors && agregatorBlock && agregatorBlock.end().clone().compareTo(block.start()) == 0)) {
                     /* TODO: add 2 setter to update all the agregated blocks and just for agregator */
                     agregatorBlock.blockData.end = block.end().clone();
                     agregatorBlock.blockData.agregatedBlocks.push(block);
