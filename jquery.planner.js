@@ -157,6 +157,9 @@ boundary: {left : object/string right: object/string}
             this.getJquery().delegate("div.planner-menu-item.delete",
                 "click",
                 $.proxy(this.onClickOnDelete, this));
+            this.getJquery().delegate("div.planner-menu-item.copy",
+                "click",
+                $.proxy(this.onClickOnCopy, this));
         },
 
         onClickOnZoomOut: function(event) {
@@ -182,6 +185,10 @@ boundary: {left : object/string right: object/string}
 
         onClickOnDelete: function() {
             this.workbenchModel.deleteSelectedBlocks();
+        },
+        
+        onClickOnCopy: function() {
+            this.workbenchModel.copySelectedBlocks();
         },
 
         getData: function() {
@@ -378,9 +385,11 @@ boundary: {left : object/string right: object/string}
             var zoomIn = $("<div>", { "class": "planner-menu-item zoomin planner-nonselectable" });
             var zoomOut = $("<div>", { "class": "planner-menu-item zoomout planner-nonselectable" });
             var deleteSelected = $("<div>", { "class": "planner-menu-item delete planner-nonselectable" });
+            var copySelected = $("<div>", { "class": "planner-menu-item copy planner-nonselectable" });
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
             this.getJquery().append(deleteSelected);
+            this.getJquery().append(copySelected);
         }
     });
 
@@ -1184,6 +1193,7 @@ boundary: {left : object/string right: object/string}
         this.blockMenuModel = new BlockMenuModel();
         this.workbenchMenuModel = new WorkbenchMenuModel();
         this.selectedBlocks = new SelectedBlocks();
+        this.copiedBlocks = undefined;
     }
 
     $.extend(WorkbenchModel.prototype, {
@@ -1296,6 +1306,53 @@ boundary: {left : object/string right: object/string}
             this.update();
             this.selectedBlocks.empty();
         },
+        copySelectedBlocks: function() {
+            this.selectedBlocks.sort();
+
+            if (!this.selectedBlocks.isEmpty()) {
+                this.copiedBlocks = $.extend(true, {}, this.selectedBlocks);
+                
+                this.selectedBlocks.empty();
+            }
+        },
+        pasteCopiedBlocks: function(position, startDate) {
+            if (!this.copiedBlocks) {
+                return;
+            }
+
+            var startDateDiff = undefined;
+            var rowDiff = undefined;
+            
+            var copiedBlockIterator = this.copiedBlocks.getIterator();
+            while (copiedBlockIterator.hasNext()) {
+                var copiedBlock = copiedBlockIterator.next();
+                if (startDateDiff === undefined) {
+                    startDateDiff = DateUtils.daysBetween(copiedBlock.start(), startDate);
+                    agregatorDiff = position.agregator - copiedBlock.getPosition().agregator;
+                }
+                
+                if (position.row == -1 && copiedBlock.getPosition().row == -1) {
+                    continue;
+                }
+
+                if (rowDiff === undefined) {
+                    rowDiff = position.row == -1 ? 0 : position.row - copiedBlock.getPosition().row;
+                }
+
+                var newPosition = {
+                    "agregator" : parseInt(copiedBlock.getPosition().agregator, 10) + agregatorDiff,
+                    "row" : parseInt(copiedBlock.getPosition().row, 10) + rowDiff 
+                }
+                
+                var newBlockData = {
+                    "start" : copiedBlock.start().clone().addDays(startDateDiff),
+                    "end" : copiedBlock.end().clone().addDays(startDateDiff)
+                };
+
+                this.addBlock(newPosition, newBlockData);
+            }
+        },
+        
         update: function() {
             var agregatorIterator = this.getIterator();
             while (agregatorIterator.hasNext()) {
@@ -2002,47 +2059,13 @@ boundary: {left : object/string right: object/string}
 
                 data.workbenchModel.addBlock(position, newBlockData);
             }));
-            /** TODO: past operation */
             this.addCommand(new CommandModel("past", function(data) {
                 var element = $(data.event.currentTarget)
                 var position = element.data("position");
 
                 var startDate = data.workbenchModel.grid.getDateByPos(data.event.pageX);
-                var startDateDiff = undefined;
-                var rowDiff = undefined;
             
-                /** TODO:: optimize sort call*/
-                data.workbenchModel.selectedBlocks.sort();
-
-                var selectedBlockIterator = data.workbenchModel.selectedBlocks.getIterator();
-                while (selectedBlockIterator.hasNext()) {
-                    var selectedBlock = selectedBlockIterator.next();
-
-                    if (startDateDiff === undefined) {
-                        startDateDiff = DateUtils.daysBetween(selectedBlock.start(), startDate);
-                        agregatorDiff = position.agregator - selectedBlock.getPosition().agregator;
-                    }
-                    
-                    if (position.row == -1 && selectedBlock.getPosition().row == -1) {
-                        continue;
-                    }
-
-                    if (rowDiff === undefined) {
-                        rowDiff = position.row == -1 ? 0 : position.row - selectedBlock.getPosition().row;
-                    }
-
-                    var newPosition = {
-                        "agregator" : parseInt(selectedBlock.getPosition().agregator, 10) + agregatorDiff,
-                        "row" : parseInt(selectedBlock.getPosition().row, 10) + rowDiff 
-                    }
-                    
-                    var newBlockData = {
-                        "start" : selectedBlock.start().clone().addDays(startDateDiff),
-                        "end" : selectedBlock.end().clone().addDays(startDateDiff)
-                    };
-
-                    data.workbenchModel.addBlock(newPosition, newBlockData);
-                }
+                data.workbenchModel.pasteCopiedBlocks(position, startDate)
             }));
         },
         addCommand: function(command) {
