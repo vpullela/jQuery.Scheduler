@@ -617,6 +617,13 @@ boundary: {left : object/string right: object/string}
             });
             this.getJquery().append(rullerDiv);
 
+            this.baseLeft = 0;
+            this.baseTop = 0;
+            this.mouseSelector = $("<div>", {
+                "class" : "planner-mouse-selector",
+            });
+            this.getJquery().append(this.mouseSelector);
+
             this.render();
             this.setEvents();
         },
@@ -805,6 +812,20 @@ boundary: {left : object/string right: object/string}
             
             console.log(this.model.grid.getDateByPos(e.pageX));
             console.log(position);
+
+
+            this.baseLeft = e.pageX;
+            this.baseTop = e.pageY;
+            this.mouseSelector.css({
+                "display" : "inline",
+                "left" : e.pageX - this.getJquery().offset().left,
+                "top" : e.pageY- this.getJquery().offset().top
+            });
+
+            this.getJquery().bind(
+                "mousemove",
+                $.proxy(this.onMouseMoveOnWorkbench, this));
+
         },
         onMouseUpOnContainer: function(e) {
             if (e.ctrlKey != true) {
@@ -815,6 +836,38 @@ boundary: {left : object/string right: object/string}
             
             console.log(this.model.grid.getDateByPos(e.pageX));
             console.log(position);
+
+            this.getJquery().unbind(
+                "mousemove",
+                $.proxy(this.onMouseMoveOnWorkbench, this));
+
+        },
+        onMouseMoveOnWorkbench: function(e) {
+            if (e.pageX >= this.baseLeft && e.pageY >= this.baseTop) {
+                this.mouseSelector.css({
+                    "width" : e.pageX - this.baseLeft,
+                    "height" : e.pageY- this.baseTop
+                });
+            } else if (e.pageX < this.baseLeft && e.pageY >= this.baseTop) {
+                this.mouseSelector.css({
+                    "left" : e.pageX - this.getJquery().offset().left,
+                    "width" : this.baseLeft - e.pageX,
+                    "height" : e.pageY- this.baseTop
+                });
+            } else if (e.pageX >= this.baseLeft && e.pageY < this.baseTop) {
+                this.mouseSelector.css({
+                    "top" : e.pageY - this.getJquery().offset().top,
+                    "width" : e.pageX - this.baseLeft,
+                    "height" : this.baseTop - e.pageY 
+                });
+            } else { //e.pageX < this.baseLeft && e.pageY < this.baseTop
+                this.mouseSelector.css({
+                    "left" : e.pageX - this.getJquery().offset().left,
+                    "top" : e.pageY - this.getJquery().offset().top,
+                    "width" : this.baseLeft - e.pageX,
+                    "height" : this.baseTop - e.pageY 
+                });
+            }
         }
     });
 

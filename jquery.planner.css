@@ -222,6 +222,17 @@ div.planner-ruller {
     pointer-events: none;
 }
 
+div.planner-mouse-selector {
+    z-index: 20;
+    position: absolute;
+    border: 1px solid #000000;
+    background-color: #0000ff;
+    opacity: 0.1;
+    filter: alpha(opacity=10);
+    pointer-events: none;
+    display: none;
+}
+
 div.planner-row {
     border-top: 1px solid #d0d0d0;
     padding-top: 4px;
