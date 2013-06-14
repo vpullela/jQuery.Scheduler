@@ -669,6 +669,14 @@ boundary: {left : object/string right: object/string}
             this.getJquery().delegate("div.planner-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
+                
+            this.getJquery().delegate("div.planner-row",
+                "mousedown",
+                $.proxy(this.onMouseDownOnContainer, this));
+                
+            this.getJquery().delegate("div.planner-row",
+                "mouseup",
+                $.proxy(this.onMouseUpOnContainer, this));
         },
 
         onMouseover: function(e) {
@@ -764,6 +772,10 @@ boundary: {left : object/string right: object/string}
             this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
         },
         onClickOnContainer: function(e) {
+            if (e.ctrlKey == true) {
+                return;
+            }
+            
             if (!this.model.selectedBlocks.isEmpty()) {
                 this.model.selectedBlocks.empty();
                 return;
@@ -784,6 +796,26 @@ boundary: {left : object/string right: object/string}
             this.workbenchMenuView.showAt(data, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
             return;
         },
+        onMouseDownOnContainer: function(e) {
+            if (e.ctrlKey != true) {
+                return;
+            }
+            var element = $(e.currentTarget)
+            var position = element.data("position");
+            
+            console.log(this.model.grid.getDateByPos(e.pageX));
+            console.log(position);
+        },
+        onMouseUpOnContainer: function(e) {
+            if (e.ctrlKey != true) {
+                return;
+            }
+            var element = $(e.currentTarget)
+            var position = element.data("position");
+            
+            console.log(this.model.grid.getDateByPos(e.pageX));
+            console.log(position);
+        }
     });
 
     /**
