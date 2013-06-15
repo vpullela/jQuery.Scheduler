@@ -571,6 +571,146 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
+     * MouseSelectorView class 
+     */
+    function MouseSelectorView(options, workbenchView) {
+        this.options = options;
+        this.workbenchView = workbenchView;
+        this.model = workbenchView.model;
+
+        this.baseX = 0;
+        this.baseY = 0;
+
+        this._init();
+        this.setEvents();
+    }
+    MouseSelectorView.prototype = Object.create(AbstractView.prototype);
+    
+    $.extend(MouseSelectorView.prototype, {
+        _init: function() {
+            var selectorDiv = $("<div>", {
+                "class" : "planner-mouse-selector",
+            });
+            this.setJquery(selectorDiv);
+        },
+        setEvents: function() {
+            /** TODO:  check 2 calls case */
+            this.workbenchView.getJquery().delegate("div.planner-row",
+                "mousedown",
+                $.proxy(this.onMouseDownOnContainer, this));
+                
+            this.workbenchView.getJquery().delegate("div.planner-row",
+                "mouseup",
+                $.proxy(this.onMouseUpOnContainer, this));
+        },
+        onMouseDownOnContainer: function(e) {
+            if (e.ctrlKey != true) {
+                return;
+            }
+            this.workbenchView.getJquery().bind(
+                "mousemove",
+                $.proxy(this.onMouseMoveOnWorkbench, this));
+
+            this.showAt(e.pageX, e.pageY);
+
+            var element = $(e.currentTarget)
+            
+            this.basePosition = element.data("position");
+            this.baseDate = this.model.grid.getDateByPos(e.pageX);
+
+            this.baseX = e.pageX;
+            this.baseY = e.pageY;
+            
+        },
+        onMouseUpOnContainer: function(e) {
+            if (e.ctrlKey != true) {
+                return;
+            }
+            this.workbenchView.getJquery().unbind(
+                "mousemove",
+                $.proxy(this.onMouseMoveOnWorkbench, this));
+
+            this.hide();
+
+            var element = $(e.currentTarget)
+            
+            var position = element.data("position");
+            var date = this.model.grid.getDateByPos(e.pageX);
+            
+            this.startDate = undefined;
+            this.endDate = undefined;
+            this.topPosition = 0;
+            this.bottomPosition = 0;
+            
+            if (e.pageX > this.baseX) {
+                this.startDate = this.baseDate;
+                this.endDate = date;
+            } else {
+                this.startDate = date;
+                this.endDate = this.baseDate;
+            }
+
+            if (e.pageY > this.baseY) {
+                this.topPosition = this.basePosition;
+                this.bottomPosition = position;
+            } else {
+                this.topPosition = postion;
+                this.bottomPosition = this.basePostion;
+            }
+            console.log("start");
+            console.log(this.startDate);
+            console.log(this.topPosition);
+            console.log("end");
+            console.log(this.endDate);
+            console.log(this.bottomPosition); 
+        },
+        onMouseMoveOnWorkbench: function(e) {
+            if (e.pageX >= this.baseX && e.pageY >= this.baseY) {
+                this.getJquery().css({
+                    "width" : e.pageX - this.baseX,
+                    "height" : e.pageY- this.baseY
+                });
+            } else if (e.pageX < this.baseX && e.pageY >= this.baseY) {
+                this.getJquery().css({
+                    "left" : e.pageX - this.workbenchView.getJquery().offset().left,
+                    "width" : this.baseX - e.pageX,
+                    "height" : e.pageY- this.baseY
+                });
+            } else if (e.pageX >= this.baseX && e.pageY < this.baseY) {
+                this.getJquery().css({
+                    "top" : e.pageY - this.workbenchView.getJquery().offset().top,
+                    "width" : e.pageX - this.baseX,
+                    "height" : this.baseY - e.pageY 
+                });
+            } else { //e.pageX < this.baseX && e.pageY < this.baseY
+                this.getJquery().css({
+                    "left" : e.pageX - this.workbenchView.getJquery().offset().left,
+                    "top" : e.pageY - this.workbenchView.getJquery().offset().top,
+                    "width" : this.baseX - e.pageX,
+                    "height" : this.baseY - e.pageY 
+                });
+            }
+        },
+        showAt: function(posX, posY) {
+            this.getJquery().css({
+                "display" : "inline",
+                "left" : posX - this.workbenchView.getJquery().offset().left,
+                "top" : posY- this.workbenchView.getJquery().offset().top
+            });
+        },
+        hide: function() {
+            this.getJquery().css({
+                "display" : "",
+                "left" : "",
+                "top" : "",
+                "width" : 0,
+                "height" : 0
+            });
+        },
+
+    });
+    
+    /**
      * WorkbenchView class
      */
     function WorkbenchView(options, model) {
@@ -617,12 +757,8 @@ boundary: {left : object/string right: object/string}
             });
             this.getJquery().append(rullerDiv);
 
-            this.baseLeft = 0;
-            this.baseTop = 0;
-            this.mouseSelector = $("<div>", {
-                "class" : "planner-mouse-selector",
-            });
-            this.getJquery().append(this.mouseSelector);
+            this.mouseSelector = new MouseSelectorView(this.options, this);
+            this.appendJquery(this.mouseSelector);
 
             this.render();
             this.setEvents();
@@ -676,14 +812,7 @@ boundary: {left : object/string right: object/string}
             this.getJquery().delegate("div.planner-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
-                
-            this.getJquery().delegate("div.planner-row",
-                "mousedown",
-                $.proxy(this.onMouseDownOnContainer, this));
-                
-            this.getJquery().delegate("div.planner-row",
-                "mouseup",
-                $.proxy(this.onMouseUpOnContainer, this));
+             
         },
 
         onMouseover: function(e) {
@@ -803,72 +932,6 @@ boundary: {left : object/string right: object/string}
             this.workbenchMenuView.showAt(data, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
             return;
         },
-        onMouseDownOnContainer: function(e) {
-            if (e.ctrlKey != true) {
-                return;
-            }
-            var element = $(e.currentTarget)
-            var position = element.data("position");
-            
-            console.log(this.model.grid.getDateByPos(e.pageX));
-            console.log(position);
-
-
-            this.baseLeft = e.pageX;
-            this.baseTop = e.pageY;
-            this.mouseSelector.css({
-                "display" : "inline",
-                "left" : e.pageX - this.getJquery().offset().left,
-                "top" : e.pageY- this.getJquery().offset().top
-            });
-
-            this.getJquery().bind(
-                "mousemove",
-                $.proxy(this.onMouseMoveOnWorkbench, this));
-
-        },
-        onMouseUpOnContainer: function(e) {
-            if (e.ctrlKey != true) {
-                return;
-            }
-            var element = $(e.currentTarget)
-            var position = element.data("position");
-            
-            console.log(this.model.grid.getDateByPos(e.pageX));
-            console.log(position);
-
-            this.getJquery().unbind(
-                "mousemove",
-                $.proxy(this.onMouseMoveOnWorkbench, this));
-
-        },
-        onMouseMoveOnWorkbench: function(e) {
-            if (e.pageX >= this.baseLeft && e.pageY >= this.baseTop) {
-                this.mouseSelector.css({
-                    "width" : e.pageX - this.baseLeft,
-                    "height" : e.pageY- this.baseTop
-                });
-            } else if (e.pageX < this.baseLeft && e.pageY >= this.baseTop) {
-                this.mouseSelector.css({
-                    "left" : e.pageX - this.getJquery().offset().left,
-                    "width" : this.baseLeft - e.pageX,
-                    "height" : e.pageY- this.baseTop
-                });
-            } else if (e.pageX >= this.baseLeft && e.pageY < this.baseTop) {
-                this.mouseSelector.css({
-                    "top" : e.pageY - this.getJquery().offset().top,
-                    "width" : e.pageX - this.baseLeft,
-                    "height" : this.baseTop - e.pageY 
-                });
-            } else { //e.pageX < this.baseLeft && e.pageY < this.baseTop
-                this.mouseSelector.css({
-                    "left" : e.pageX - this.getJquery().offset().left,
-                    "top" : e.pageY - this.getJquery().offset().top,
-                    "width" : this.baseLeft - e.pageX,
-                    "height" : this.baseTop - e.pageY 
-                });
-            }
-        }
     });
 
     /**
