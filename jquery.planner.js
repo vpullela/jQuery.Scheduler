@@ -659,8 +659,8 @@ boundary: {left : object/string right: object/string}
                 this.topPosition = this.basePosition;
                 this.bottomPosition = position;
             } else {
-                this.topPosition = postion;
-                this.bottomPosition = this.basePostion;
+                this.topPosition = position;
+                this.bottomPosition = this.basePosition;
             }
             
             this.model.selectArea(
