@@ -580,6 +580,8 @@ boundary: {left : object/string right: object/string}
 
         this.baseX = 0;
         this.baseY = 0;
+        
+        this.selectionStarted = false;
 
         this._init();
         this.setEvents();
@@ -607,6 +609,7 @@ boundary: {left : object/string right: object/string}
             if (e.ctrlKey != true) {
                 return;
             }
+            this.selectionStarted = true;
             this.workbenchView.getJquery().bind(
                 "mousemove",
                 $.proxy(this.onMouseMoveOnWorkbench, this));
@@ -623,9 +626,11 @@ boundary: {left : object/string right: object/string}
             
         },
         onMouseUpOnContainer: function(e) {
-            if (e.ctrlKey != true) {
+            if (!this.selectionStarted) {
                 return;
             }
+            this.selectionStarted = false;
+            
             this.workbenchView.getJquery().unbind(
                 "mousemove",
                 $.proxy(this.onMouseMoveOnWorkbench, this));
@@ -639,8 +644,8 @@ boundary: {left : object/string right: object/string}
             
             this.startDate = undefined;
             this.endDate = undefined;
-            this.topPosition = 0;
-            this.bottomPosition = 0;
+            this.topPosition = undefined;
+            this.bottomPosition = undefined;
             
             if (e.pageX > this.baseX) {
                 this.startDate = this.baseDate;
@@ -657,12 +662,13 @@ boundary: {left : object/string right: object/string}
                 this.topPosition = postion;
                 this.bottomPosition = this.basePostion;
             }
-            console.log("start");
-            console.log(this.startDate);
-            console.log(this.topPosition);
-            console.log("end");
-            console.log(this.endDate);
-            console.log(this.bottomPosition); 
+            
+            this.model.selectArea(
+                this.topPosition,
+                this.startDate,
+                this.bottomPosition,
+                this.endDate
+            );
         },
         onMouseMoveOnWorkbench: function(e) {
             if (e.pageX >= this.baseX && e.pageY >= this.baseY) {
@@ -809,6 +815,10 @@ boundary: {left : object/string right: object/string}
                 "click",
                 $.proxy(this.onClickOnBlock, this));
 
+            this.getJquery().delegate("div.planner-block",
+                "mousedown",
+                $.proxy(this.onMouseDownOnBlock, this));
+
             this.getJquery().delegate("div.planner-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
@@ -901,12 +911,23 @@ boundary: {left : object/string right: object/string}
             e.stopPropagation();
             var blockModel = this.model.getBlockByPosition($(e.currentTarget).data("position"));
             if (e.ctrlKey == true) {
-                blockModel.select();
+                if (!blockModel.selected) {
+                    blockModel.select();
+                } else {
+                    blockModel.unselect();
+                }
                 return;
             }
 
             this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
         },
+        
+        onMouseDownOnBlock: function(e) {
+            if (e.ctrlKey == true) {
+                e.stopPropagation();
+            }
+        },
+        
         onClickOnContainer: function(e) {
             if (e.ctrlKey == true) {
                 return;
@@ -1440,6 +1461,13 @@ boundary: {left : object/string right: object/string}
 
             agregator.updateAgregatorRow();
         },
+        selectArea: function(topPosition, startDate, bottomPosition, endDate) {
+            /** TODO: add row selection */
+            var agregatorIterator = this.getIterator();
+            for (var i = topPosition.agregator; i <= bottomPosition.agregator; i++) {
+                this.getAgregator(i).getAgregatorRow().selectPeriod(startDate, endDate);
+            }
+        },
         updateSelectedBlocks: function() {
             this.update();
             this.selectedBlocks.empty();
@@ -1661,6 +1689,17 @@ boundary: {left : object/string right: object/string}
             this.setBlockList(this.getBlockList());
             this.notifyObservers();
             this.needToUpdate = false;
+        },
+
+        selectPeriod: function(startDate, endDate) {
+            var blockIterator = this.getIterator();
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                if ((block.start().compareTo(startDate) >= 0 && block.start().compareTo(endDate) <= 0)
+                || (block.end().compareTo(startDate) >= 0 && block.end().compareTo(endDate) <= 0)) {
+                    block.select();
+                }
+            }
         },
         
         getAgregator: function() {
