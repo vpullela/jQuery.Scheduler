@@ -606,7 +606,7 @@ boundary: {left : object/string right: object/string}
                 $.proxy(this.onMouseUpOnContainer, this));
         },
         onMouseDownOnContainer: function(e) {
-            if (e.ctrlKey != true) {
+            if (e.shiftKey != true) {
                 return;
             }
             this.selectionStarted = true;
@@ -908,6 +908,7 @@ boundary: {left : object/string right: object/string}
 
         onClickOnBlock: function(e) {
             e.stopPropagation();
+
             var blockModel = this.model.getBlockByPosition($(e.currentTarget).data("position"));
             if (e.ctrlKey == true) {
                 if (!blockModel.selected) {
@@ -920,7 +921,7 @@ boundary: {left : object/string right: object/string}
 
             this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
         },
-        
+
         onClickOnContainer: function(e) {
             if (e.ctrlKey == true) {
                 return;
@@ -1689,8 +1690,9 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.getIterator();
             while (blockIterator.hasNext()) {
                 var block = blockIterator.next();
-                if ((block.start().compareTo(startDate) >= 0 && block.start().compareTo(endDate) <= 0)
-                || (block.end().compareTo(startDate) >= 0 && block.end().compareTo(endDate) <= 0)) {
+                if ((block.start().compareTo(startDate) > 0 && block.start().compareTo(endDate) < 0)
+                || (block.end().compareTo(startDate) > 0 && block.end().compareTo(endDate) < 0)
+                || (block.start().compareTo(startDate) <= 0 && block.end().compareTo(endDate) > 0)) {
                     block.select();
                 }
             }
