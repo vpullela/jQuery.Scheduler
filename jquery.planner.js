@@ -862,7 +862,9 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                blockModel.resize(ui.helper.position().left, ui.helper.width());
+                if (!blockModel.isDisabled()) {
+                    blockModel.resize(ui.helper.position().left, ui.helper.width());
+                }
             }
         },
         onResizeBlockStop: function(e, ui) {
@@ -893,7 +895,9 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                blockModel.resize(ui.position.left, ui.helper.width());
+                if (!blockModel.isDisabled()) {
+                    blockModel.resize(ui.position.left, ui.helper.width());
+                }
             }
         },
         onDragBlockStop: function(e, ui) {
@@ -1187,11 +1191,8 @@ boundary: {left : object/string right: object/string}
                 "class": "planner-block"
             });
 
-            // block in the past not active
-            if (this.options.disabledPast && this.options.scrollToDate) {
-                if (this.model.end().compareTo(this.options.scrollToDate) <= 0) {
-                    block.addClass("disabled");
-                }
+            if (this.model.isDisabled()) {
+                block.addClass("disabled");
             }
 
             this.setJquery(block);
@@ -2055,6 +2056,16 @@ boundary: {left : object/string right: object/string}
             this.selected = false;
             this.notifyObservers();
         },
+        
+        isDisabled: function() {
+            if (this.options.disabledPast && this.options.scrollToDate) {
+                if (this.end().compareTo(this.options.scrollToDate) <= 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        
         remove: function() {
             /* TODO: ? move the metod to RowModel ?*/ 
             this.getRow().blockList.splice($.inArray(this, this.getRow().blockList), 1);
