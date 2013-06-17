@@ -873,8 +873,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            if(event.ctrlKey)
-            {
+            if(e.ctrlKey) {
                 return false;
             }
         },
