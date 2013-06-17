@@ -927,7 +927,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onClickOnContainer: function(e) {
-            if (e.ctrlKey == true) {
+            if (e.shiftKey == true) {
                 return;
             }
             
