@@ -815,10 +815,6 @@ boundary: {left : object/string right: object/string}
                 "click",
                 $.proxy(this.onClickOnBlock, this));
 
-            this.getJquery().delegate("div.planner-block",
-                "mousedown",
-                $.proxy(this.onMouseDownOnBlock, this));
-
             this.getJquery().delegate("div.planner-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
@@ -877,6 +873,10 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
+            if(event.ctrlKey)
+            {
+                return false;
+            }
         },
         onDragBlock: function(e, ui) {
             // return if dragging is not horisontal
@@ -920,12 +920,6 @@ boundary: {left : object/string right: object/string}
             }
 
             this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
-        },
-        
-        onMouseDownOnBlock: function(e) {
-            if (e.ctrlKey == true) {
-                e.stopPropagation();
-            }
         },
         
         onClickOnContainer: function(e) {
