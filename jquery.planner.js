@@ -2039,13 +2039,21 @@ boundary: {left : object/string right: object/string}
         select: function() {
             var workbenchModel = this.getRow().getAgregator().getWorkbench();
             workbenchModel.selectedBlocks.addBlock(this);
+            this.selectView();
+        },
+        unselect: function() {
+            var workbenchModel = this.getRow().getAgregator().getWorkbench();
+            workbenchModel.selectedBlocks.removeBlock(this);
+            this.unselectView();
+        },
+        selectView: function() {
             this.selected = true;
             this.notifyObservers();
         },
-        unselect: function() {
+        unselectView: function() {
             this.selected = false;
             this.notifyObservers();
-        }, 
+        },
         remove: function() {
             /* TODO: ? move the metod to RowModel ?*/ 
             this.getRow().blockList.splice($.inArray(this, this.getRow().blockList), 1);
@@ -2146,14 +2154,19 @@ boundary: {left : object/string right: object/string}
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
     
-            var workbenchModel = this.getRow().getAgregator().getWorkbench();
             var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
             while(blockIterator.hasNext()) {
                 var block = blockIterator.next();
-
-                workbenchModel.selectedBlocks.addBlock(block);
-                block.selected = true;
-                block.notifyObservers();
+                block.select();
+            }
+        },
+        unselect: function() {
+            AbstractBlockModel.prototype.unselect.apply(this, arguments);
+    
+            var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
+            while(blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                block.unselect();
             }
         },
         getAgregatedBlocks: function() {
@@ -2307,6 +2320,11 @@ boundary: {left : object/string right: object/string}
             this.selectedBlocks.push(block);
             this.isSorted = false;
         },
+        removeBlock: function(block) {
+            if (this.isSelected(block)) {
+                this.selectedBlocks.splice($.inArray(block, this.selectedBlocks), 1);
+            }
+        },
 
         isSelected: function(block) {
             var blockIterator = this.getIterator();
@@ -2367,7 +2385,7 @@ boundary: {left : object/string right: object/string}
             while (blockIterator.hasNext()) {
                 selectedBlock = blockIterator.next();
                 if (selectedBlock) {
-                    selectedBlock.unselect();
+                    selectedBlock.unselectView();
                 }
             }
             this.selectedBlocks.length = 0;
