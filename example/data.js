@@ -1,4 +1,4 @@
-var plannerData = [
+var schedulerData = [
     {
         metadata: { name: "Feature 1" },
         data: [

@@ -1,5 +1,5 @@
 /*
-jQuery.Planner
+jQuery.Scheduler
 Copyright (c) 2013 S Bondaryev - sbondaryev@gmail.com
 MIT License Applies
 */
@@ -16,7 +16,7 @@ boundary: {left : object/string right: object/string}
 */
 
 (function ($) {
-    $.widget("custom.planner", {
+    $.widget("custom.scheduler", {
         chart: undefined,
 
         _create: function() {
@@ -61,11 +61,11 @@ boundary: {left : object/string right: object/string}
 
         /** Geometry Handling */
         // get the geometry properties from css
-        var cellSize = this.getCssProperty("planner-workbench", "background-size").split(" ");
+        var cellSize = this.getCssProperty("scheduler-workbench", "background-size").split(" ");
         var cellWidth = parseInt(cellSize[0]);
         var cellHeight = parseInt(cellSize[1]);
-        var width = parseInt(this.getCssProperty("planner", "width"), 10);
-        var vtHeaderWidth = parseInt(this.getCssProperty("planner-vtheader", "width"), 10);
+        var width = parseInt(this.getCssProperty("scheduler", "width"), 10);
+        var vtHeaderWidth = parseInt(this.getCssProperty("scheduler-vtheader", "width"), 10);
 
         // set default geometry (order: params -> css -> hardcode)
         options.cellWidth      = options.cellWidth      || cellWidth     || 21;
@@ -107,7 +107,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(ChartView.prototype, {
         _init: function() {
-            this.element.addClass("planner");
+            this.element.addClass("scheduler");
             this.setJquery(this.element);
 
             this.setData(this.options.data);
@@ -141,23 +141,23 @@ boundary: {left : object/string right: object/string}
         },
 
         applyLastClass: function() {
-            $("div.planner-vtheader div.planner-vtheader-agregator:last-child", this.getJquery()).addClass("last");
-            $("div.planner-hzheader-days div.planner-hzheader-day:last-child", this.getJquery()).addClass("last");
-            $("div.planner-hzheader-months div.planner-hzheader-month:last-child", this.getJquery()).addClass("last");
+            $("div.scheduler-vtheader div.scheduler-vtheader-agregator:last-child", this.getJquery()).addClass("last");
+            $("div.scheduler-hzheader-days div.scheduler-hzheader-day:last-child", this.getJquery()).addClass("last");
+            $("div.scheduler-hzheader-months div.scheduler-hzheader-month:last-child", this.getJquery()).addClass("last");
         },
 
         setEvents: function() {
             /* TODO: replase selectors - use event function*/
-            this.getJquery().delegate("div.planner-menu-item.zoomout",
+            this.getJquery().delegate("div.scheduler-menu-item.zoomout",
                 "click",
                 $.proxy(this.onClickOnZoomOut, this));
-            this.getJquery().delegate("div.planner-menu-item.zoomin",
+            this.getJquery().delegate("div.scheduler-menu-item.zoomin",
                 "click",
                 $.proxy(this.onClickOnZoomIn, this));
-            this.getJquery().delegate("div.planner-menu-item.delete",
+            this.getJquery().delegate("div.scheduler-menu-item.delete",
                 "click",
                 $.proxy(this.onClickOnDelete, this));
-            this.getJquery().delegate("div.planner-menu-item.copy",
+            this.getJquery().delegate("div.scheduler-menu-item.copy",
                 "click",
                 $.proxy(this.onClickOnCopy, this));
         },
@@ -238,7 +238,7 @@ boundary: {left : object/string right: object/string}
     $.extend(VtHeaderView.prototype, {
         _init: function (options) {
             var headerDiv = $("<div>", {
-                "class": "planner-vtheader",
+                "class": "scheduler-vtheader",
                 "css": {
                     "width" : this.options.vtHeaderWidth
                 }
@@ -271,7 +271,7 @@ boundary: {left : object/string right: object/string}
         /** Event Handlers */
         setEvents: function() {
             /* TODO: replace selectors */
-            this.getJquery().delegate("div.planner-vtheader-agregator",
+            this.getJquery().delegate("div.scheduler-vtheader-agregator",
                 "click",
                 $.proxy(this.onClickOnAgregator, this));
         },
@@ -296,7 +296,7 @@ boundary: {left : object/string right: object/string}
     $.extend(VtHeaderAgregatorView.prototype, {
         _init: function() {
             var agregatorDiv = $("<div>", {
-                "class": "planner-vtheader-agregator",
+                "class": "scheduler-vtheader-agregator",
                 "css" : {
                     "height": this.options.cellHeight + "px"
                 }
@@ -313,7 +313,7 @@ boundary: {left : object/string right: object/string}
             this.removeContent();
 
             var agregatorNameDiv = $("<div>", {
-                "class": "planner-vtheader-agregator-name planner-nonselectable"
+                "class": "scheduler-vtheader-agregator-name scheduler-nonselectable"
             });
             agregatorNameDiv.append(this.model.getName());
             this.getJquery().append(agregatorNameDiv);
@@ -322,7 +322,7 @@ boundary: {left : object/string right: object/string}
 
             /* TODO:: (duplicaion) make agregatorRow iterable */
             var rowDiv = $("<div>", {
-                "class": "planner-vtheader-agregate-row planner-nonselectable",
+                "class": "scheduler-vtheader-agregate-row scheduler-nonselectable",
                 "css" : {
                     "height" : (this.options.cellHeight - 1) + "px"
                 }
@@ -332,7 +332,7 @@ boundary: {left : object/string right: object/string}
             while (rowIterator.hasNext()) {
                 var row = rowIterator.next();
                 var rowDiv = $("<div>", {
-                    "class": "planner-vtheader-row planner-nonselectable",
+                    "class": "scheduler-vtheader-row scheduler-nonselectable",
                     "css" : {
                         "height" : this.options.cellHeight + "px"
                     }
@@ -373,7 +373,7 @@ boundary: {left : object/string right: object/string}
     $.extend(MenuView.prototype, {
         _init: function () {
             var menuDiv = $("<div>", {
-                "class": "planner-menu planner-nonselectable",
+                "class": "scheduler-menu scheduler-nonselectable",
             });
 
             this.setJquery(menuDiv);
@@ -382,10 +382,10 @@ boundary: {left : object/string right: object/string}
         },
 
         render: function() {
-            var zoomIn = $("<div>", { "class": "planner-menu-item zoomin planner-nonselectable" });
-            var zoomOut = $("<div>", { "class": "planner-menu-item zoomout planner-nonselectable" });
-            var deleteSelected = $("<div>", { "class": "planner-menu-item delete planner-nonselectable" });
-            var copySelected = $("<div>", { "class": "planner-menu-item copy planner-nonselectable" });
+            var zoomIn = $("<div>", { "class": "scheduler-menu-item zoomin scheduler-nonselectable" });
+            var zoomOut = $("<div>", { "class": "scheduler-menu-item zoomout scheduler-nonselectable" });
+            var deleteSelected = $("<div>", { "class": "scheduler-menu-item delete scheduler-nonselectable" });
+            var copySelected = $("<div>", { "class": "scheduler-menu-item copy scheduler-nonselectable" });
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
             this.getJquery().append(deleteSelected);
@@ -409,7 +409,7 @@ boundary: {left : object/string right: object/string}
     $.extend(SlideView.prototype, {
         _init: function() {
             var slideContainer = $("<div>", {
-                "class": "planner-slide",
+                "class": "scheduler-slide",
                 "css": {
                     "width": this.options.rowWidth() + "px"
                 }
@@ -471,15 +471,15 @@ boundary: {left : object/string right: object/string}
             var dates = this.getDatePeriod();
             var numberOfDays = this.options.boundary.getNumberOfDays(true);
 
-            var headerDiv = $("<div>", { "class": "planner-hzheader" });
-            var monthsDiv = $("<div>", { "class": "planner-hzheader-months" });
-            var daysDiv = $("<div>", { "class": "planner-hzheader-days" });
+            var headerDiv = $("<div>", { "class": "scheduler-hzheader" });
+            var monthsDiv = $("<div>", { "class": "scheduler-hzheader-months" });
+            var daysDiv = $("<div>", { "class": "scheduler-hzheader-days" });
 
             for (var y in dates) {
                 for (var m in dates[y]) {
                     var w = dates[y][m].length * this.cellWidth;
                     monthsDiv.append($("<div>", {
-                        "class": "planner-hzheader-month planner-nonselectable",
+                        "class": "scheduler-hzheader-month scheduler-nonselectable",
                         "css": { "width": w + "px" }
                     }).append(this._monthNames[m] + "/" + y));
                     for (var d in dates[y][m]) {
@@ -544,10 +544,10 @@ boundary: {left : object/string right: object/string}
             this.cellWidth = this.options.cellWidth;
             this.showWeekends = this.options.showWeekends;
 
-            var day = $("<div>", { "class": "planner-hzheader-day planner-nonselectable" });
+            var day = $("<div>", { "class": "scheduler-hzheader-day scheduler-nonselectable" });
             day.css("width", this.cellWidth);
             if (this.showWeekends && this.isWeekend()) {
-                day.addClass("planner-weekend");
+                day.addClass("scheduler-weekend");
             }
             
             /* font size adjusting */
@@ -591,17 +591,17 @@ boundary: {left : object/string right: object/string}
     $.extend(MouseSelectorView.prototype, {
         _init: function() {
             var selectorDiv = $("<div>", {
-                "class" : "planner-mouse-selector",
+                "class" : "scheduler-mouse-selector",
             });
             this.setJquery(selectorDiv);
         },
         setEvents: function() {
             /** TODO:  check 2 calls case */
-            this.workbenchView.getJquery().delegate("div.planner-row",
+            this.workbenchView.getJquery().delegate("div.scheduler-row",
                 "mousedown",
                 $.proxy(this.onMouseDownOnContainer, this));
                 
-            this.workbenchView.getJquery().delegate("div.planner-row",
+            this.workbenchView.getJquery().delegate("div.scheduler-row",
                 "mouseup",
                 $.proxy(this.onMouseUpOnContainer, this));
         },
@@ -739,7 +739,7 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
 
             var blocksDiv = $("<div>", {
-                "class": "planner-workbench",
+                "class": "scheduler-workbench",
                 "css": {
                     "border" : 0,
                     "width" : (numberOfDays+1) * cellWidth + "px",
@@ -755,7 +755,7 @@ boundary: {left : object/string right: object/string}
                 rullerLeft = this.model.grid.getPosByDate(this.options.scrollToDate);
             }
             var rullerDiv = $("<div>", {
-                "class" : "planner-ruller",
+                "class" : "scheduler-ruller",
                 "css": {
                     "left" : rullerLeft + "px",
                     "width" : cellWidth + "px",
@@ -807,15 +807,15 @@ boundary: {left : object/string right: object/string}
         setEvents: function() {
             /* TODO: replace selectors */
             /* TODO: ?undelegate events on removeContent */
-            this.getJquery().delegate("div:not(.disabled).planner-block",
+            this.getJquery().delegate("div:not(.disabled).scheduler-block",
                 "mouseover",
                 $.proxy(this.onMouseover, this));
 
-            this.getJquery().delegate("div:not(.disabled).planner-block",
+            this.getJquery().delegate("div:not(.disabled).scheduler-block",
                 "click",
                 $.proxy(this.onClickOnBlock, this));
 
-            this.getJquery().delegate("div.planner-row",
+            this.getJquery().delegate("div.scheduler-row",
                 "click",
                 $.proxy(this.onClickOnContainer, this));
              
@@ -977,7 +977,7 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
 
             var blocksDiv = $("<div>", {
-                "class": "planner-agregator",
+                "class": "scheduler-agregator",
                 "css": {
                     "border" : 0,
                     "width" : (numberOfDays+1) * cellWidth + "px",
@@ -997,7 +997,7 @@ boundary: {left : object/string right: object/string}
             /** TODO:: add left unavailable zone functinality */
             /*
             this.leftUnavailableZone = $("<div>", {
-            "class": "planner-unavailable",
+            "class": "scheduler-unavailable",
             "css": {
                 "width" : (3) * this.options.cellWidth + "px",
                 "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
@@ -1007,7 +1007,7 @@ boundary: {left : object/string right: object/string}
             var unavailableDaysNumber = this.options.boundary.getNumberOfDays(true) - this.options.boundary.getNumberOfDays();
             if (unavailableDaysNumber > 0) {
                 this.rightUnavailableZone = $("<div>", {
-                "class": "planner-unavailable",
+                "class": "scheduler-unavailable",
                 "css": {
                     "left" : (this.options.boundary.getNumberOfDays(true) - unavailableDaysNumber) * this.options.cellWidth + "px",
                     "width" : (unavailableDaysNumber + 1) * this.options.cellWidth + "px",
@@ -1113,7 +1113,7 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
 
             var row = $("<div>", {
-                "class": "planner-row",
+                "class": "scheduler-row",
                 "css" : {
                     "height": cellHeight + "px",
                     "width": (this.numberOfDays+1) * cellWidth + "px",
@@ -1188,7 +1188,7 @@ boundary: {left : object/string right: object/string}
     $.extend(BlockView.prototype, {
         _init: function() {
             var block = $("<div>", {
-                "class": "planner-block"
+                "class": "scheduler-block"
             });
 
             if (this.model.isDisabled()) {
@@ -1198,8 +1198,8 @@ boundary: {left : object/string right: object/string}
             this.setJquery(block);
             
             // duration
-            this.textBlock = $("<div>", { "class": "planner-block-text" });
-            this.textBlock.addClass("planner-nonselectable");
+            this.textBlock = $("<div>", { "class": "scheduler-block-text" });
+            this.textBlock.addClass("scheduler-nonselectable");
             
             this.getJquery().append(this.textBlock);
             
@@ -1262,7 +1262,7 @@ boundary: {left : object/string right: object/string}
     $.extend(BlockMenuView.prototype, {
         _init: function() {
             var menu = $("<div>", {
-                "class" : "planner-block-menu",
+                "class" : "scheduler-block-menu",
             });
             this.setJquery(menu);
 
@@ -1322,7 +1322,7 @@ boundary: {left : object/string right: object/string}
     $.extend(BlockMenuItemView.prototype, {
         _init: function() {
             var menu = $("<div>", {
-                "class" : "planner-block-menu-item",
+                "class" : "scheduler-block-menu-item",
             }).text(this.command.getName());
 
             this.setJquery(menu);

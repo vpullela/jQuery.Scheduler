@@ -27,7 +27,7 @@
     <script type="text/javascript">
         $(function () {
             if (testData) {
-                var chart = $("#chart").planner({
+                var chart = $("#chart").scheduler({
                         width: 900,
                         showWeekends: true,
                         expandBorder: false,
@@ -37,7 +37,7 @@
                 return;
             }
 
-            var chart = $("#chart").planner({
+            var chart = $("#chart").scheduler({
                                             width: 900,
                                             showWeekends: true,
                                             expandBorder: false,
@@ -47,19 +47,19 @@
                                             boundary: {left: "2013-06-01", right: "2013-06-20"}
                                         });
 
-            chart.planner("setData", plannerData );
-            chart.planner("addBlockCommand", "edit", function(blockModel) {
+            chart.scheduler("setData", schedulerData );
+            chart.scheduler("addBlockCommand", "edit", function(blockModel) {
                 console.log(blockModel);
             });
             //TODO: check rerender functionality
-            //chart.planner("option", {boundary: {left: "2013-01-01", right: "2014-01-20"}});
-            //console.log(chart.planner("getData"));
+            //chart.scheduler("option", {boundary: {left: "2013-01-01", right: "2014-01-20"}});
+            //console.log(chart.scheduler("getData"));
 
 
             /* Test external events handling */
-            $("#chart").bind("planneronclickonzoomout", function(event, data) { console.log(data); });
+            $("#chart").bind("scheduleronclickonzoomout", function(event, data) { console.log(data); });
 
-            $("#get_data").bind("click", function(event, data) {console.log(chart.planner("getData"));});
+            $("#get_data").bind("click", function(event, data) {console.log(chart.scheduler("getData"));});
         });
 
     </script>
