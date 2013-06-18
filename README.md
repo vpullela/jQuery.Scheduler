@@ -1,4 +1,4 @@
-jQuery.Planner
+jQuery.Scheduler
 ================
 This is a clone of jQuery.ganttView project
 (https://github.com/thegrubbsian/jquery.ganttView)
@@ -6,7 +6,7 @@ with some new features
 
 License
 -------
-The jQuery.Planner plugin may be used free of charge under the conditions 
+The jQuery.Scheduler plugin may be used free of charge under the conditions 
 of the following license:
 
 The MIT License
