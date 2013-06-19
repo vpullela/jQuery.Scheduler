@@ -1,6 +1,6 @@
 var schedulerData = [
     {
-        metadata: { name: "Feature 1" },
+        metadata: { name: "Feature 1", boundary: {left: "2012-06-12", right :"2016-06-25" }},
         data: [
             {
                 metadata: { name: "Sub 1" },
@@ -25,7 +25,7 @@ var schedulerData = [
     }, 
     {
         metadata: {
-            name: "Feature 3"
+            name: "Feature 3", boundary: {right :"2013-06-24" }
         },
         data: [
             {

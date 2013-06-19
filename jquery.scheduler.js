@@ -469,7 +469,7 @@ boundary: {left : object/string right: object/string}
         _init: function() {
             /*TODO: move getDatePeriod in model layer  */
             var dates = this.getDatePeriod();
-            var numberOfDays = this.options.boundary.getNumberOfDays(true);
+            var numberOfDays = this.options.boundary.getNumberOfDays();
 
             var headerDiv = $("<div>", { "class": "scheduler-hzheader" });
             var monthsDiv = $("<div>", { "class": "scheduler-hzheader-months" });
@@ -509,13 +509,13 @@ boundary: {left : object/string right: object/string}
         getDatePeriod: function() {
             var dates = [];
             var left = this.options.boundary.getLeft();
-            var rightAdj = this.options.boundary.getRight(true);
+            var right = this.options.boundary.getRight();
 
             dates[left.getFullYear()] = [];
             dates[left.getFullYear()][left.getMonth()] = [left]
 
             var last = left;
-            while (last.compareTo(rightAdj) == -1) {
+            while (last.compareTo(right) == -1) {
                 var next = last.clone().addDays(1);
                 if (!dates[next.getFullYear()]) { dates[next.getFullYear()] = []; }
                 if (!dates[next.getFullYear()][next.getMonth()]) {
@@ -734,7 +734,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(WorkbenchView.prototype, {
         _init: function() {
-            var numberOfDays = this.options.boundary.getNumberOfDays(true);
+            var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -972,7 +972,7 @@ boundary: {left : object/string right: object/string}
 
     $.extend(AgregatorView.prototype, {
         _init: function() {
-            var numberOfDays = this.options.boundary.getNumberOfDays(true);
+            var numberOfDays = this.options.boundary.getNumberOfDays();
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
 
@@ -994,30 +994,33 @@ boundary: {left : object/string right: object/string}
             this.removeContent();
 
             // Unavailable Zones
-            /** TODO:: add left unavailable zone functinality */
-            /*
-            this.leftUnavailableZone = $("<div>", {
-            "class": "scheduler-unavailable",
-            "css": {
-                "width" : (3) * this.options.cellWidth + "px",
-                "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
-                }
-            });
-            */
-            var unavailableDaysNumber = this.options.boundary.getNumberOfDays(true) - this.options.boundary.getNumberOfDays();
+            var unavailableDaysNumber = DateUtils.daysBetween(this.options.boundary.getLeft(), this.model.boundary.getLeft());
+            if (unavailableDaysNumber > 0) {
+                this.leftUnavailableZone = $("<div>", {
+                "class": "scheduler-unavailable",
+                "css": {
+                    "width" : unavailableDaysNumber * this.options.cellWidth + "px",
+                    "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
+                    }
+                })
+
+                this.getJquery().append(this.leftUnavailableZone);
+            };
+
+            var unavailableDaysNumber = DateUtils.daysBetween(this.model.boundary.getRight(), this.options.boundary.getRight());
             if (unavailableDaysNumber > 0) {
                 this.rightUnavailableZone = $("<div>", {
                 "class": "scheduler-unavailable",
                 "css": {
-                    "left" : (this.options.boundary.getNumberOfDays(true) - unavailableDaysNumber) * this.options.cellWidth + "px",
+                    "left" : (this.options.boundary.getNumberOfDays() - unavailableDaysNumber) * this.options.cellWidth + "px",
                     "width" : (unavailableDaysNumber + 1) * this.options.cellWidth + "px",
                     "height" : this.model.getNumberOfRows() * this.options.cellHeight + "px",
                     }
                 });
+
+                this.getJquery().append(this.rightUnavailableZone);
             }
             
-            this.getJquery().append(this.leftUnavailableZone);
-            this.getJquery().append(this.rightUnavailableZone);
             
             // rows
             this.agregatorRowView = new RowView(this.options, this.model.getAgregatorRow());
@@ -1071,6 +1074,9 @@ boundary: {left : object/string right: object/string}
                     rowView.show();
                 }
                 
+                if (this.leftUnavailableZone) {
+                    this.leftUnavailableZone.animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+                }
                 if (this.rightUnavailableZone) {
                     this.rightUnavailableZone.animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
                 }
@@ -1083,6 +1089,9 @@ boundary: {left : object/string right: object/string}
                     rowView.hide();
                 }
                 
+                if (this.leftUnavailableZone) {
+                    this.leftUnavailableZone.animate({height: this.options.cellHeight});
+                }
                 if (this.rightUnavailableZone) {
                     this.rightUnavailableZone.animate({height: this.options.cellHeight});
                 }
@@ -1100,7 +1109,7 @@ boundary: {left : object/string right: object/string}
         this.options = options;
         this.model = model;
 
-        this.numberOfDays = this.options.boundary.getNumberOfDays(true);
+        this.numberOfDays = this.options.boundary.getNumberOfDays();
 
         this.contentArray = [];
         this._init();
@@ -1555,6 +1564,21 @@ boundary: {left : object/string right: object/string}
 
         /* TODO: move to configuration part */
         this.expanded = false;
+        
+        // boundary
+        if (this.metadata.boundary) {
+            this.boundary = $.extend(true, {}, this.options.boundary);
+            this.boundary.setMinDays(0);
+
+            if (this.metadata.boundary.left) {
+                this.boundary.setLeft(DateUtils.convertToDate(this.metadata.boundary.left, this.options.dateFormat));
+            }
+            if (this.metadata.boundary.right) {
+                this.boundary.setRight(DateUtils.convertToDate(this.metadata.boundary.right, this.options.dateFormat));
+            }
+        } else {
+            this.boundary = this.options.boundary;
+        }
     }
     AgregatorModel.prototype = Object.create(AbstractModel.prototype);
     $.extend(AgregatorModel.prototype, {
@@ -1844,22 +1868,25 @@ boundary: {left : object/string right: object/string}
         /* convert if dates in string */
         this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
         this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
+        
+        /* boundary */
+        this.boundary = this.getRow().getAgregator().boundary;
 
         if (!this.options.expandBorder) {
             /* fit to boundary */
-            if (this.start().compareTo(this.options.boundary.getLeft()) < 0
-                && this.end().compareTo(this.options.boundary.getLeft()) < 0) {
+            if (this.start().compareTo(this.boundary.getLeft()) < 0
+                && this.end().compareTo(this.boundary.getLeft()) < 0) {
                 throw "wrong period";
             }
-            if (this.start().compareTo(this.options.boundary.getRight()) > 0
-                && this.end().compareTo(this.options.boundary.getRight()) > 0) {
+            if (this.start().compareTo(this.boundary.getRight()) > 0
+                && this.end().compareTo(this.boundary.getRight()) > 0) {
                 throw "wrong period";
             }
-            if (this.start().compareTo(this.options.boundary.getLeft()) < 0) {
-                this.blockData.start = this.options.boundary.getLeft().clone();
+            if (this.start().compareTo(this.boundary.getLeft()) < 0) {
+                this.blockData.start = this.boundary.getLeft().clone();
             }
-            if (this.end().compareTo(this.options.boundary.getRight()) > 0) {
-                this.blockData.end = this.options.boundary.getRight().clone();
+            if (this.end().compareTo(this.boundary.getRight()) > 0) {
+                this.blockData.end = this.boundary.getRight().clone();
             }
         } else {
             /* calculate max/min dates  */
@@ -2022,16 +2049,16 @@ boundary: {left : object/string right: object/string}
         },
         
         fitToLeftBoundary: function(days) {
-            if (this.start().clone().addDays(days).compareTo(this.options.boundary.left) < 0) {
-                this.blockData.start = this.options.boundary.left.clone();
+            if (this.start().clone().addDays(days).compareTo(this.boundary.getLeft()) < 0) {
+                this.blockData.start = this.boundary.getLeft().clone();
                 this.getRow().needToUpdate = true;
                 return true;
             }
             return false;
         },
         fitToRightBoundary: function(days) {
-            if (this.end().clone().addDays(days).compareTo(this.options.boundary.right) > 0) {
-                this.blockData.end = this.options.boundary.right.clone();
+            if (this.end().clone().addDays(days).compareTo(this.boundary.getRight()) > 0) {
+                this.blockData.end = this.boundary.getRight().clone();
                 this.getRow().needToUpdate = true;
                 return true;
             }
@@ -2473,9 +2500,9 @@ boundary: {left : object/string right: object/string}
         this.minDays = 0;
         this.numberOfDays = 0;
 
+        this.setMinDays(minDays);
         this.setLeft(left);
         this.setRight(right);
-        this.setMinDays(minDays);
     }
 
     $.extend(Boundary.prototype, {
@@ -2489,27 +2516,33 @@ boundary: {left : object/string right: object/string}
 
         setRight: function(right) {
             this.right = right;
+
+            this.checkMinRight();
             this.calculateNumberOfDays();
         },
-        getRight: function(adjusted) {
-            if (adjusted && this.numberOfDays < this.minDays) {
-                return this.getLeft().clone().addDays(this.minDays);
-            }
+        getRight: function() {
             return this.right;
         },
 
         setMinDays: function(minDays) {
             this.minDays = minDays;
+
+            this.checkMinRight();
+            this.calculateNumberOfDays();
+        },
+
+        checkMinRight: function() {
+            var minRight = this.getLeft().clone().addDays(this.minDays);
+            if (minRight.compareTo(this.right) > 0) {
+                this.right = minRight;
+            }
         },
 
         calculateNumberOfDays: function() {
             this.numberOfDays = DateUtils.daysBetween(this.left, this.right);
         },
 
-        getNumberOfDays: function(adjusted) {
-            if (adjusted && this.numberOfDays < this.minDays) {
-                return this.minDays;
-            }
+        getNumberOfDays: function() {
             return this.numberOfDays;
         },
     });
