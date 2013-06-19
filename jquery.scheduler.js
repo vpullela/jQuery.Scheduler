@@ -1560,7 +1560,6 @@ boundary: {left : object/string right: object/string}
         this.agregatorRow = new AgregatorRowModel(this, -1, {}, []);
 
         this.metadata = metadata
-        this.setData(data);
 
         /* TODO: move to configuration part */
         this.expanded = false;
@@ -1579,6 +1578,8 @@ boundary: {left : object/string right: object/string}
         } else {
             this.boundary = this.options.boundary;
         }
+
+        this.setData(data);
     }
     AgregatorModel.prototype = Object.create(AbstractModel.prototype);
     $.extend(AgregatorModel.prototype, {
