@@ -1598,7 +1598,6 @@ boundary: {left : object/string right: object/string}
         },
 
         setData: function(data) {
-            var blockList = []
             for (rowNum in data) {
                 var row = new RowModel(this, rowNum, data[rowNum].metadata, data[rowNum].data);
                 this.rowList.push(row);
