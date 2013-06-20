@@ -2022,7 +2022,7 @@ boundary: {left : object/string right: object/string}
             this.start().addDays(days);
             this.getRow().needToUpdate = true;
 
-            if (this.start().compareTo(this.end()) > 0) {
+            if (this.start().compareTo(this.end()) >= 0) {
                 this.end().addDays(days);
             }
         },
@@ -2034,7 +2034,7 @@ boundary: {left : object/string right: object/string}
             this.end().addDays(days);
             this.getRow().needToUpdate = true;
 
-            if (this.end().compareTo(this.start()) < 0) {
+            if (this.end().compareTo(this.start()) <= 0) {
                 this.start().addDays(days);
             }
         },
@@ -2117,9 +2117,9 @@ boundary: {left : object/string right: object/string}
         },
         fitToAgregator: function() {
             var agregatorBlock = this.getAgregatorBlock();
-            var startDiff = agregatorBlock.start() - this.start();
-            
             var blockChanged = false;
+
+            var startDiff = agregatorBlock.start() - this.start();
             if (startDiff > 0) {
                 this.start().add({ "milliseconds": startDiff});
                 this.end().add({ "milliseconds": startDiff });
