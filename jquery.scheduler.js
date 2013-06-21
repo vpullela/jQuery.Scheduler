@@ -77,6 +77,7 @@ boundary: {left : object/string right: object/string}
         options.expandBodrer   = options.expandBorder   && true;         // false
         options.mergeNeighbors = options.mergeNeighbors && true;         // false
         options.disabledPast   = options.disabledPast   && true;         // false
+        options.language       = options.language                        || "en";
 
         // calculabe options
         options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
@@ -97,6 +98,9 @@ boundary: {left : object/string right: object/string}
         if (options.scrollToDate) {
             options.scrollToDate = DateUtils.convertToDate(options.scrollToDate, options.dateFormat).clearTime();
         }
+
+        // set internationalization
+        options.i18n = new I18n(options.language); 
 
         this.options = options;
         this.workbenchModel = new WorkbenchModel(options);
@@ -382,10 +386,19 @@ boundary: {left : object/string right: object/string}
         },
 
         render: function() {
-            var zoomIn = $("<div>", { "class": "scheduler-menu-item zoomin scheduler-nonselectable" });
-            var zoomOut = $("<div>", { "class": "scheduler-menu-item zoomout scheduler-nonselectable" });
-            var deleteSelected = $("<div>", { "class": "scheduler-menu-item delete scheduler-nonselectable" });
-            var copySelected = $("<div>", { "class": "scheduler-menu-item copy scheduler-nonselectable" });
+            var zoomIn = $("<div>", {
+                "title": this.options.i18n.zoomIn,
+                "class": "scheduler-menu-item zoomin scheduler-nonselectable" });
+            var zoomOut = $("<div>", {
+                "title": this.options.i18n.zoomOut,
+                "class": "scheduler-menu-item zoomout scheduler-nonselectable" });
+            var deleteSelected = $("<div>", { 
+                "title": this.options.i18n.deleteSelectedBlocks,
+                "class": "scheduler-menu-item delete scheduler-nonselectable" });
+            var copySelected = $("<div>", {
+                "title": this.options.i18n.copySelectedBlocks,
+                "class": "scheduler-menu-item copy scheduler-nonselectable" });
+                
             this.getJquery().append(zoomIn);
             this.getJquery().append(zoomOut);
             this.getJquery().append(deleteSelected);
@@ -481,7 +494,7 @@ boundary: {left : object/string right: object/string}
                     monthsDiv.append($("<div>", {
                         "class": "scheduler-hzheader-month scheduler-nonselectable",
                         "css": { "width": w + "px" }
-                    }).append(this._monthNames[m] + "/" + y));
+                    }).append(this.options.i18n.month[m] + "/" + y));
                     for (var d in dates[y][m]) {
                         var day = new HzHeaderDayView(this.options, dates[y][m][d]);
                         this.daysArray.push(day);
@@ -1227,7 +1240,10 @@ boundary: {left : object/string right: object/string}
                 "margin-right" : "2px"
             });
             
-            this.getJquery().attr("title", "start:\t" + this.model.start().toString(this.options.dateFormat) + "\nend:\t" + this.model.end().toString(this.options.dateFormat));
+            this.getJquery().attr(
+                "title", this.options.i18n.startBlock + ":\t" + this.model.start().toString(this.options.i18n.dateFormat) 
+                + "\n" + this.options.i18n.endBlock + ":\t" + this.model.end().toString(this.options.i18n.dateFormat)
+            );
             
             if (this.model.color()) {
                 this.getJquery().css("background-color", this.model.color());
@@ -1363,8 +1379,8 @@ boundary: {left : object/string right: object/string}
         this.options = options;
         this.data = [];
 
-        this.blockMenuModel = new BlockMenuModel();
-        this.workbenchMenuModel = new WorkbenchMenuModel();
+        this.blockMenuModel = new BlockMenuModel(this.options);
+        this.workbenchMenuModel = new WorkbenchMenuModel(this.options);
         this.selectedBlocks = new SelectedBlocks();
         this.copiedBlocks = undefined;
     }
@@ -2244,18 +2260,19 @@ boundary: {left : object/string right: object/string}
     /**
      * BlockMenuModel class
      */
-    function BlockMenuModel() {
+    function BlockMenuModel(options) {
+        this.options = options;
         this.commandList = [];
 
         this.addDefaultComands();
     }
     $.extend(BlockMenuModel.prototype, {
         addDefaultComands: function() {
-            this.addCommand(new CommandModel("select", function(blockModel) {
+            this.addCommand(new CommandModel(this.options.i18n.selectBlock, function(blockModel) {
                 blockModel.select();
             }));
 
-            this.addCommand(new CommandModel("delete", function(blockModel) {
+            this.addCommand(new CommandModel(this.options.i18n.deleteBlock, function(blockModel) {
                 blockModel.select();
                 var workbenchModel = blockModel.getRow().getAgregator().getWorkbench();
                 workbenchModel.deleteSelectedBlocks();
@@ -2273,14 +2290,15 @@ boundary: {left : object/string right: object/string}
     /**
      * WorkbenchMenuModel class
      */
-    function WorkbenchMenuModel() {
+    function WorkbenchMenuModel(options) {
+        this.options = options;
         this.commandList = [];
 
         this.addDefaultComands();
     }
     $.extend(WorkbenchMenuModel.prototype, {
         addDefaultComands: function() {
-            this.addCommand(new CommandModel("new", function(data) {
+            this.addCommand(new CommandModel(this.options.i18n.newBlock, function(data) {
                 var element = $(data.event.currentTarget)
                 var position = element.data("position");
 
@@ -2293,7 +2311,7 @@ boundary: {left : object/string right: object/string}
 
                 data.workbenchModel.addBlock(position, newBlockData);
             }));
-            this.addCommand(new CommandModel("past", function(data) {
+            this.addCommand(new CommandModel(this.options.i18n.pasteBlock, function(data) {
                 var element = $(data.event.currentTarget)
                 var position = element.data("position");
 
@@ -2544,6 +2562,76 @@ boundary: {left : object/string right: object/string}
 
         getNumberOfDays: function() {
             return this.numberOfDays;
+        },
+    });
+
+    function I18n(lang) {
+        this.lang = lang;
+        this.initializeEnglish();
+        
+        if (lang == "fr") {
+            this.initializeFrench();
+        } else if (lang == "ru") {
+            this.initializeRus()
+        }
+    }
+    $.extend(I18n.prototype, {
+        initializeEnglish: function() {
+            this.zoomIn      = "Zoom In";
+            this.zoomOut     = "Zoom Out";
+            this.deleteSelectedBlocks = "Delete Selected Blocks";
+            this.copySelectedBlocks = "Copy Selected Blocks";
+
+            this.newBlock    = "New Block";
+            this.pasteBlock  = "Paste Block";
+            
+            this.selectBlock = "Select";
+            this.deleteBlock = "Delete";
+            this.editBlock   = "Edit";
+            
+            this.startBlock  = "Start";
+            this.endBlock    = "End";
+            
+            this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            this.dateFormat  = "dd/MM/yyyy";
+        },
+        initializeFrench: function() {
+            this.zoomIn      = "Zoom +";
+            this.zoomOut     = "Zoom -";
+            this.deleteSelectedBlocks = "Supprimer Fenêtres Sélectionnées";
+            this.copySelectedBlocks = "Copier Fenêtres Sélectionnées";
+            
+            this.newBlock    = "Nouvelle Fenêtre";
+            this.pasteBlock  = "Coller Fenêtre";
+            
+            this.selectBlock = "Sélectionner";
+            this.deleteBlock = "Supprimer";
+            this.editBlock   = "Modifier";
+            
+            this.startBlock  = "Début";
+            this.endBlock    = "Fin";
+            
+            this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
+            this.dateFormat  = "dd/MM/yyyy";
+        },
+        initializeRus: function() {
+            this.zoomIn      = "Увеличить";
+            this.zoomOut     = "Уменьшить";
+            this.deleteSelectedBlocks = "Удалить выделенные блоки";
+            this.copySelectedBlocks = "Копировать выделенные блоки";
+            
+            this.newBlock    = "Новый блок";
+            this.pasteBlock  = "Вставить блок";
+            
+            this.selectBlock = "Выделить";
+            this.deleteBlock = "Удалить";
+            this.editBlock   = "Редактировать";
+            
+            this.startBlock  = "Начало";
+            this.endBlock    = "Конец"; 
+
+            this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
+            this.dateFormat  = "dd/MM/yyyy";
         },
     });
 
