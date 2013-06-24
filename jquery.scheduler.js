@@ -278,12 +278,18 @@ boundary: {left : object/string right: object/string}
             this.getJquery().delegate("div.scheduler-vtheader-agregator",
                 "click",
                 $.proxy(this.onClickOnAgregator, this));
+            this.getJquery().delegate("a.scheduler-vtheader-agregator-name",
+                "click",
+                $.proxy(this.onClickOnAgregatorLink, this));
         },
         onClickOnAgregator: function(e) {
             var position = $(e.currentTarget).data("position");
             var agregatorModel = this.model.getAgregator(position.agregator);
 
             agregatorModel.toggle();
+        },
+        onClickOnAgregatorLink: function(e) {
+            e.stopPropagation();
         }
     });
 
@@ -315,14 +321,22 @@ boundary: {left : object/string right: object/string}
 
         render: function() {
             this.removeContent();
+            
+            var agregatorNameContainer = undefined;
+            if (this.model.metadata.link) {
+                var agregatorNameContainer = $("<a>", {
+                    "class" : "scheduler-vtheader-agregator-name scheduler-nonselectable",
+                    "href" : this.model.metadata.link,
+                    "target" : "blank" 
+                });
+            } else {
+                var agregatorNameContainer = $("<div>", {
+                    "class": "scheduler-vtheader-agregator-name scheduler-nonselectable"
+                });
+            }
+            agregatorNameContainer.append(this.model.getName());
+            this.getJquery().append(agregatorNameContainer);
 
-            var agregatorNameDiv = $("<div>", {
-                "class": "scheduler-vtheader-agregator-name scheduler-nonselectable"
-            });
-            agregatorNameDiv.append(this.model.getName());
-            this.getJquery().append(agregatorNameDiv);
-
-            var rowIterator = this.model.getIterator();
 
             /* TODO:: (duplicaion) make agregatorRow iterable */
             var rowDiv = $("<div>", {
@@ -333,6 +347,7 @@ boundary: {left : object/string right: object/string}
             });
             this.getJquery().append(rowDiv);
 
+            var rowIterator = this.model.getIterator();
             while (rowIterator.hasNext()) {
                 var row = rowIterator.next();
                 var rowDiv = $("<div>", {
@@ -341,8 +356,10 @@ boundary: {left : object/string right: object/string}
                         "height" : this.options.cellHeight + "px"
                     }
                 });
+                
                 /*TODO:: add getters/setters to model */
                 rowDiv.append(row.metadata.name);
+                
                 this.getJquery().append(rowDiv);
             }
 

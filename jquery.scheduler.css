@@ -31,7 +31,8 @@ div.scheduler-hzheader-month,
 div.scheduler-hzheader-day,
 div.scheduler-vtheader,
 div.scheduler-workbench,
-div.scheduler-vtheader-agregator-name {
+div.scheduler-vtheader-agregator-name,
+a.scheduler-vtheader-agregator-name {
     float: left;
 }
 
@@ -109,7 +110,7 @@ div.scheduler-vtheader {
 div.scheduler-vtheader-agregator,
 div.scheduler-menu {
     overflow: hidden;
-    color: #666;
+    color: #777;
     line-height: 16px;
 }
 
@@ -131,8 +132,17 @@ div.scheduler-vtheader-row {
     text-align: left;
 }
 div.scheduler-vtheader-agregator-name,
+a.scheduler-vtheader-agregator-name,
 div.scheduler-vtheader-row {
     font-size: 0.8em;
+}
+
+a.scheduler-vtheader-agregator-name {
+    text-decoration: none;
+    color: #777;
+}
+a.scheduler-vtheader-agregator-name:hover {
+    color: #000;
 }
 
 div.scheduler-menu {
