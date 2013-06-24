@@ -322,6 +322,7 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
             
+            /* name */
             var agregatorNameContainer = undefined;
             if (this.model.metadata.link) {
                 var agregatorNameContainer = $("<a>", {
@@ -337,7 +338,13 @@ boundary: {left : object/string right: object/string}
             agregatorNameContainer.append(this.model.getName());
             this.getJquery().append(agregatorNameContainer);
 
+            /* toggle button */
+            this.buttonDiv = $("<div>", {
+                "class": "scheduler-vtheader-agregator-toggle"
+            });
+            this.getJquery().append(this.buttonDiv);
 
+            /* rows */
             /* TODO:: (duplicaion) make agregatorRow iterable */
             var rowDiv = $("<div>", {
                 "class": "scheduler-vtheader-agregate-row scheduler-nonselectable",
@@ -368,8 +375,10 @@ boundary: {left : object/string right: object/string}
         toggleSlide: function() {
             if (this.model.expanded) {
                 this.getJquery().animate({height: this.options.cellHeight * this.model.getNumberOfRows()});
+                this.buttonDiv.addClass("up");
             } else {
                 this.getJquery().animate({height: this.options.cellHeight});
+                this.buttonDiv.removeClass("up");
             }
         },
         removeContent: function() {

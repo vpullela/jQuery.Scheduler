@@ -1,7 +1,7 @@
 var schedulerData = [
     {
         metadata: { 
-            name: "Feature 1",
+            name: "Feature 1 Feature Feature Feature Feature",
             boundary: {left: "2012-06-12", right :"2016-06-25" },
             link: "#"
         },
