@@ -143,6 +143,7 @@ div.scheduler-vtheader-row {
 a.scheduler-vtheader-agregator-name {
     margin-right: 15px;
     text-decoration: none;
+    outline: 0;
     color: #777;
 }
 a.scheduler-vtheader-agregator-name:hover {
