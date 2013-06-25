@@ -51,6 +51,7 @@
                                         });
 
             chart.scheduler("setData", schedulerData );
+            chart.scheduler("updateData", updateData );
             chart.scheduler("addBlockCommand", "edit", function(blockModel) {
                 console.log(blockModel);
             });

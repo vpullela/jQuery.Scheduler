@@ -31,6 +31,10 @@ boundary: {left : object/string right: object/string}
             return this.chartView.getData();
         },
         
+        updateData: function(data) {
+            return this.chartView.updateData(data);
+        },
+        
         addBlockCommand: function(name, callback) {
             this.chartView.addBlockCommand(name, callback);
         },
@@ -202,6 +206,10 @@ boundary: {left : object/string right: object/string}
         setData: function(data) {
             this.workbenchModel.setData(data);
             this.render();
+        },
+
+        updateData: function(data) {
+            this.workbenchModel.updateData(data);
         },
 
         setWidth: function(width) {
@@ -1443,6 +1451,26 @@ boundary: {left : object/string right: object/string}
             }
             return result;
         },
+        
+        updateData: function (data) {
+            var agregatorDataIterator = new ArrayIterator(data);
+            while (agregatorDataIterator.hasNext()) {
+                var agregatorData = agregatorDataIterator.next();
+                var agregator = this.getAgregatorByMetadata(agregatorData.metafilter);
+                if (!agregator) {
+                    continue;
+                }
+                
+                var agregatorRow = agregator.getAgregatorRow();
+                blockDataIterator = new ArrayIterator(agregatorData.data);
+                while (blockDataIterator.hasNext()) {
+                    blockData = blockDataIterator.next();
+                    agregatorRow.addBlock(blockData);
+                }
+                
+                agregator.updateAgregatorRow();
+            } 
+        },
         /* TODO: fix dupliction getData */
         getDataJson: function() {
             var result = [];
@@ -1469,6 +1497,19 @@ boundary: {left : object/string right: object/string}
         getAgregator: function(order) {
             return this.data[order];
         },
+        getAgregatorByMetadata: function(metafilter) {
+            var agregatorIterator = this.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var agregator = agregatorIterator.next();
+                
+                if (agregator.filterMetadata(metafilter)) {
+                    return agregator;
+                }
+            }
+            
+            return false;
+        },
+        
         getBlockByPosition: function(position) {
             var agregator = this.getAgregator(position.agregator);
             var row = agregator.getRow(position.row);
@@ -1480,30 +1521,13 @@ boundary: {left : object/string right: object/string}
             if (!agregator) {
                 return false;
             }
-            /*TODO: optimize if statement */
-            if (position.row == -1) {
-                var rowIterator = agregator.getIterator();
-                while (rowIterator.hasNext()) {
-                    var row = rowIterator.next();
-                    var blockList = row.getBlockList();
-                    blockData.start = blockData.start.clone();
-                    blockData.end = blockData.end.clone();
-                    
-                    blockList.push(blockData);
-                    row.setBlockList(blockList);
-                    row.notifyObservers();
-                }
-            } else {
-                var row = agregator.getRow(position.row);
-                if (!row) {
-                    return false;
-                }
-                var blockList = row.getBlockList();
-
-                blockList.push(blockData);
-                row.setBlockList(blockList);
-                row.notifyObservers();
+            
+            var row = agregator.getRow(position.row);
+            if (!row) {
+                return false;
             }
+            
+            row.addBlock(blockData);
 
             agregator.updateAgregatorRow();
         },
@@ -1639,6 +1663,15 @@ boundary: {left : object/string right: object/string}
             this.expanded = !this.expanded;
             this.notifyObservers();
         },
+        
+        filterMetadata: function(metafilter) {
+            for (var key in metafilter) {
+                if (this.metadata[key] != metafilter[key]) {
+                    return false;
+                }
+            }
+            return true;
+        }, 
 
         setData: function(data) {
             for (rowNum in data) {
@@ -1727,6 +1760,17 @@ boundary: {left : object/string right: object/string}
                 result.push(block.getBlockDataJson());
             }
             return result;
+        },
+
+        addBlock: function(blockData) {
+            blockData.start = DateUtils.convertToDate(blockData.start, this.options.dateFormat);
+            blockData.end = DateUtils.convertToDate(blockData.end, this.options.dateFormat);
+
+            var blockList = this.getBlockList();
+            blockList.push(blockData);
+
+            this.setBlockList(blockList);
+            this.notifyObservers();
         },
 
         getBlock: function(blockNum) {
@@ -1894,6 +1938,13 @@ boundary: {left : object/string right: object/string}
                 }
             }
         },
+        addBlock: function(blockData) {
+            var rowIterator = this.getAgregator().getIterator();
+            while (rowIterator.hasNext()) {
+                var row = rowIterator.next();
+                row.addBlock(blockData);
+            }
+        }
     });
 
     /**
