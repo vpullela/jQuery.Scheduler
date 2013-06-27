@@ -34,6 +34,10 @@ boundary: {left : object/string right: object/string}
         updateData: function(data) {
             return this.chartView.updateData(data);
         },
+
+        getAgregatorMetadata: function(data) {
+            return this.chartView.getAgregatorMetadata();
+        },
         
         addBlockCommand: function(name, callback) {
             this.chartView.addBlockCommand(name, callback);
@@ -210,6 +214,10 @@ boundary: {left : object/string right: object/string}
 
         updateData: function(data) {
             this.workbenchModel.updateData(data);
+        },
+
+        getAgregatorMetadata: function(data) {
+            return this.workbenchModel.getAgregatorMetadata();
         },
 
         setWidth: function(width) {
@@ -1491,6 +1499,19 @@ boundary: {left : object/string right: object/string}
                 }
                 result.push(dataRow);
             }
+
+            return result;
+        },
+
+        getAgregatorMetadata: function() {
+            var result= [];
+
+            var agregatorIterator = this.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var agregator = agregatorIterator.next();
+                result.push(agregator.metadata);
+            }
+
             return result;
         },
 

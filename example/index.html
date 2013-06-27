@@ -63,7 +63,7 @@
             /* Test external events handling */
             $("#chart").bind("scheduleronclickonzoomout", function(event, data) { console.log(data); });
 
-            $("#get_data").bind("click", function(event, data) {console.log(chart.scheduler("getData"));});
+            $("#get_data").bind("click", function(event, data) {console.log(chart.scheduler("getAgregatorMetadata"));});
         });
 
     </script>
