@@ -678,7 +678,6 @@ boundary: {left : object/string right: object/string}
 
             this.baseX = e.pageX;
             this.baseY = e.pageY;
-            
         },
         onMouseUpOnContainer: function(e) {
             if (!this.selectionStarted) {
@@ -930,7 +929,7 @@ boundary: {left : object/string right: object/string}
         },
 
         onDragBlockStart: function(e, ui) {
-            if(e.ctrlKey) {
+            if(e.ctrlKey || e.shiftKey) {
                 return false;
             }
         },
