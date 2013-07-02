@@ -881,22 +881,33 @@ boundary: {left : object/string right: object/string}
             if (!element.data("init")) {
                 element.data("init", true);
 
-                element.resizable({
-                    grid: this.cellWidth,
-                    handles: "e,w",
-                    start: $.proxy(this.onResizeBlockStart, this),
-                    resize: $.proxy(this.onResizeBlock, this),
-                    stop: $.proxy(this.onResizeBlockStop, this)
-                });
+                var blockModel = this.model.getBlockByPosition(element.data("position"));
+                if (blockModel.isStarted()) {
+                    element.resizable({
+                        grid: this.cellWidth,
+                        handles: "e",
+                        start: $.proxy(this.onResizeBlockStart, this),
+                        resize: $.proxy(this.onResizeBlock, this),
+                        stop: $.proxy(this.onResizeBlockStop, this)
+                    });
+                } else {
+                    element.resizable({
+                        grid: this.cellWidth,
+                        handles: "e,w",
+                        start: $.proxy(this.onResizeBlockStart, this),
+                        resize: $.proxy(this.onResizeBlock, this),
+                        stop: $.proxy(this.onResizeBlockStop, this)
+                    });
 
-                element.draggable({
-                    scroll: true,
-                    axis: "x",
-                    grid: [this.cellWidth, this.cellWidth],
-                    start: $.proxy(this.onDragBlockStart,this),
-                    drag: $.proxy(this.onDragBlock, this),
-                    stop: $.proxy(this.onDragBlockStop, this)
-                });
+                    element.draggable({
+                        scroll: true,
+                        axis: "x",
+                        grid: [this.cellWidth, this.cellWidth],
+                        start: $.proxy(this.onDragBlockStart,this),
+                        drag: $.proxy(this.onDragBlock, this),
+                        stop: $.proxy(this.onDragBlockStop, this)
+                    });
+                }
             }
         },
 
@@ -2198,8 +2209,17 @@ boundary: {left : object/string right: object/string}
         },
         
         isDisabled: function() {
-            if (this.options.disabledPast && this.options.scrollToDate) {
-                if (this.end().compareTo(this.options.scrollToDate) <= 0) {
+            if (this.options.disabledPast && this.options.currentDate) {
+                if (this.end().compareTo(this.options.currentDate) <= 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        isStarted: function() {
+            if (this.options.disabledPast && this.options.currentDate) {
+                if (this.start().compareTo(this.options.currentDate) < 0 
+                    && this.end().compareTo(this.options.currentDate) >= 0) {
                     return true;
                 }
             }
