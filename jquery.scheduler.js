@@ -1267,6 +1267,8 @@ boundary: {left : object/string right: object/string}
 
             if (this.model.isDisabled()) {
                 block.addClass("disabled");
+            } else if (this.model.isStarted()) {
+                block.addClass("started");
             }
 
             this.setJquery(block);

@@ -288,6 +288,10 @@ div.scheduler-block.disabled {
     background-color: #F0F0F0!important;
 }
 
+div.scheduler-block.started {
+    background-color: #FFD0D0!important;
+}
+
 /* workaround for block menu */
 div.scheduler-block > div.ui-resizable-handle{
     z-index: 99;
