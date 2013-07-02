@@ -103,8 +103,8 @@ boundary: {left : object/string right: object/string}
         options.boundary = new Boundary(left, right, minDays);
 
         // set frame begginging date
-        if (options.scrollToDate) {
-            options.scrollToDate = DateUtils.convertToDate(options.scrollToDate, options.dateFormat).clearTime();
+        if (options.currentDate) {
+            options.currentDate = DateUtils.convertToDate(options.currentDate, options.dateFormat).clearTime();
         }
 
         // set internationalization
@@ -473,8 +473,8 @@ boundary: {left : object/string right: object/string}
 
             this.render();
 
-            if (this.options.scrollToDate) {
-                this.scrollToDate(this.options.scrollToDate);
+            if (this.options.currentDate) {
+                this.currentDate(this.options.currentDate);
             }
         },
 
@@ -490,7 +490,7 @@ boundary: {left : object/string right: object/string}
             this.appendJquery(hzHeader);
             this.appendJquery(workbenchView);
         },
-        scrollToDate: function(date) {
+        currentDate: function(date) {
             // 500 - scroll speed
             this.getJquery().animate({scrollLeft: this.model.grid.getPosByDate(date)}, 500);
         },
@@ -805,8 +805,8 @@ boundary: {left : object/string right: object/string}
 
             /* current day ruller */
             var rullerLeft = 0;
-            if (this.options.scrollToDate) {
-                rullerLeft = this.model.grid.getPosByDate(this.options.scrollToDate);
+            if (this.options.currentDate) {
+                rullerLeft = this.model.grid.getPosByDate(this.options.currentDate);
             }
             var rullerDiv = $("<div>", {
                 "class" : "scheduler-ruller",
@@ -990,9 +990,9 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.options.disabledPast && this.options.scrollToDate) { 
+            if (this.options.disabledPast && this.options.currentDate) { 
                 var clickDate = this.model.grid.getDateByPos(e.pageX);
-                if (clickDate.compareTo(this.options.scrollToDate) < 0) {
+                if (clickDate.compareTo(this.options.currentDate) < 0) {
                     return;
                 }
             }
