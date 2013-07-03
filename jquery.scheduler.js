@@ -924,9 +924,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                if (!blockModel.isDisabled()) {
-                    blockModel.resize(ui.helper.position().left, ui.helper.width());
-                }
+                blockModel.resize(ui.helper.position().left, ui.helper.width());
             }
         },
         onResizeBlockStop: function(e, ui) {
@@ -957,9 +955,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                if (!blockModel.isDisabled()) {
-                    blockModel.resize(ui.position.left, ui.helper.width());
-                }
+                blockModel.resize(ui.position.left, ui.helper.width());
             }
         },
         onDragBlockStop: function(e, ui) {
@@ -2106,13 +2102,15 @@ boundary: {left : object/string right: object/string}
         resize: function(left, width) {
             var deltaWidth = this.width ? width - this.width : this.width;
             var deltaLeft = left - this.left;
-
             this.width = width;
             this.left = left;
+            
+            if (this.isDisabled()) {
+                return;
+            }
 
             var blockChanged = false;
-            if (deltaWidth == 0 && deltaLeft != 0)
-            {
+            if (!this.isStarted() && deltaWidth == 0 && deltaLeft != 0) {
                 this.drag(deltaLeft / this.options.cellWidth);
                 blockChanged = true;
             }
@@ -2121,12 +2119,12 @@ boundary: {left : object/string right: object/string}
                 this.resizeRight(deltaWidth / this.options.cellWidth);
                 blockChanged = true;
             }
-            else if (deltaWidth != 0 && deltaLeft != 0)
+            else if (!this.isStarted() && deltaWidth != 0 && deltaLeft != 0)
             {
                 this.resizeLeft((-1) * deltaWidth / this.options.cellWidth)
                 blockChanged = true;
             }
-            
+
             /* isDragged checks if block is moved by jquery facilities: to prevent double view update */
             if (blockChanged && !this.isDragged) {
                 this.notifyObservers();
@@ -2217,7 +2215,7 @@ boundary: {left : object/string right: object/string}
         },
         isStarted: function() {
             if (this.options.disabledPast && this.options.currentDate) {
-                if (this.start().compareTo(this.options.currentDate) < 0 
+                if (this.start().compareTo(this.options.currentDate) <= 0 
                     && this.end().compareTo(this.options.currentDate) >= 0) {
                     return true;
                 }
