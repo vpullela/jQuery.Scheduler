@@ -518,9 +518,6 @@ boundary: {left : object/string right: object/string}
     HzHeaderView.prototype = Object.create(AbstractView.prototype);
 
     $.extend(HzHeaderView.prototype, {
-        /* TODO: move to configuration part */
-        _monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-
         _init: function() {
             /*TODO: move getDatePeriod in model layer  */
             var dates = this.getDatePeriod();
