@@ -351,7 +351,13 @@ boundary: {left : object/string right: object/string}
                     "class": "scheduler-vtheader-agregator-name scheduler-nonselectable"
                 });
             }
-            agregatorNameContainer.append(this.model.getName());
+            /** TODO: add name format customisation */
+            if (this.model.metadata["number"]) {
+                agregatorNameContainer.append(this.model.metadata['number'] + ". " + this.model.getName());
+            } else {
+                agregatorNameContainer.append(this.model.getName());
+            }
+
             this.getJquery().append(agregatorNameContainer);
 
             /* toggle button */
