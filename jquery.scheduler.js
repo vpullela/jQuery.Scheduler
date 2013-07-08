@@ -81,7 +81,7 @@ boundary: {left : object/string right: object/string}
         options.width          = options.width          || width         || 600;
         options.vtHeaderWidth  = options.vtHeaderWidth  || vtHeaderWidth || 100;
         options.showWeekends   = options.showWeekends   && true;         // false
-        options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd";
+        options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd HH:mm";
         options.expandBodrer   = options.expandBorder   && true;         // false
         options.mergeNeighbors = options.mergeNeighbors && true;         // false
         options.disabledPast   = options.disabledPast   && true;         // false
@@ -2038,19 +2038,6 @@ boundary: {left : object/string right: object/string}
             return this.blockData.start;
         },
         setStart: function(date, format) {
-            /*TODO: 
-             * duplication isAgregatorSolid, setEnd
-             * agregatorBlock functionality need to create a class
-             */
-            if (this.getRow().order == -1) {
-                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    
-                    block.setStart(date, format);
-                }
-            }
-            
             if (!format) {
                 format = this.options.dateFormat;
             }
@@ -2061,19 +2048,6 @@ boundary: {left : object/string right: object/string}
             return this.blockData.end;
         },
         setEnd: function(date, format) {
-            /*TODO: 
-             * duplication isAgregatorSolid, setStart
-             * agregatorBlock functionality need to create a class
-             */
-            if (this.getRow().order == -1) {
-                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    
-                    block.setEnd(date, format);
-                }
-            }
-            
             if (!format) {
                 format = this.options.dateFormat;
             }
@@ -2325,6 +2299,28 @@ boundary: {left : object/string right: object/string}
             }
 
             return true;
+        },
+        setStart: function(date, format) {
+            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                
+                block.setStart(date, format);
+            }
+
+            AbstractBlockModel.prototype.setStart.apply(this, arguments);
+        },
+        setEnd: function(date, format) {
+            if (this.getRow().order == -1) {
+                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+                    
+                    block.setEnd(date, format);
+                }
+            }
+            
+            AbstractBlockModel.prototype.setEnd.apply(this, arguments);
         },
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
@@ -2713,7 +2709,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "End";
             
             this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
         initializeFrench: function() {
             this.zoomIn      = "Zoom +";
@@ -2732,7 +2728,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Fin";
             
             this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
         initializeRus: function() {
             this.zoomIn      = "Увеличить";
@@ -2751,7 +2747,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Конец"; 
 
             this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
     });
 
