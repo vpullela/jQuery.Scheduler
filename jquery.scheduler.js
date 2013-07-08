@@ -1991,8 +1991,8 @@ boundary: {left : object/string right: object/string}
         this.blockData = blockData;
         
         /* convert if dates in string */
-        this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
-        this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
+        this.setStart(this.blockData.start, this.options.dateFormat);
+        this.setEnd(this.blockData.end, this.options.dateFormat);
         
         /* boundary */
         this.boundary = this.getRow().getAgregator().boundary;
