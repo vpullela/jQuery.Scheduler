@@ -81,7 +81,7 @@ boundary: {left : object/string right: object/string}
         options.width          = options.width          || width         || 600;
         options.vtHeaderWidth  = options.vtHeaderWidth  || vtHeaderWidth || 100;
         options.showWeekends   = options.showWeekends   && true;         // false
-        options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd";
+        options.dateFormat     = options.dateFormat                      || "yyyy-MM-dd HH:mm";
         options.expandBodrer   = options.expandBorder   && true;         // false
         options.mergeNeighbors = options.mergeNeighbors && true;         // false
         options.disabledPast   = options.disabledPast   && true;         // false
@@ -1283,8 +1283,10 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
-            var size = DateUtils.daysBetween(this.model.start(), this.model.end());
-            var offset = DateUtils.daysBetween(this.options.boundary.getLeft(), this.model.start());
+            
+
+            var size = DateUtils.daysBetween(this.model.startAdjusted(), this.model.endAdjusted());
+            var offset = DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), this.model.startAdjusted());
 
             this.getJquery().css({
                 "width": ((size * cellWidth) - 3) + "px",
@@ -1895,7 +1897,7 @@ boundary: {left : object/string right: object/string}
                 if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
                     blockToDelete.push(block);
                 }
-                else if (previousBlock && previousBlock.end().clone().compareTo(block.start()) > 0 ||
+                else if (previousBlock && previousBlock.endAdjusted().compareTo(block.startAdjusted()) > 0 ||
                         (this.options.mergeNeighbors && previousBlock && previousBlock.end().clone().compareTo(block.start()) == 0)) {
                     previousBlock.blockData.end = block.end().clone();
                     blockToDelete.push(block);
@@ -1991,8 +1993,8 @@ boundary: {left : object/string right: object/string}
         this.blockData = blockData;
         
         /* convert if dates in string */
-        this.blockData.start = DateUtils.convertToDate(this.blockData.start, this.options.dateFormat);
-        this.blockData.end = DateUtils.convertToDate(this.blockData.end, this.options.dateFormat);
+        this.setStart(this.blockData.start, this.options.dateFormat);
+        this.setEnd(this.blockData.end, this.options.dateFormat);
         
         /* boundary */
         this.boundary = this.getRow().getAgregator().boundary;
@@ -2037,47 +2039,33 @@ boundary: {left : object/string right: object/string}
         start: function() {
             return this.blockData.start;
         },
+        startAdjusted: function() {
+            return this.blockData.start.clone().clearTime();
+        },
         setStart: function(date, format) {
-            /*TODO: 
-             * duplication isAgregatorSolid, setEnd
-             * agregatorBlock functionality need to create a class
-             */
-            if (this.getRow().order == -1) {
-                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    
-                    block.setStart(date, format);
-                }
-            }
-            
             if (!format) {
                 format = this.options.dateFormat;
             }
-            this.blockData.start = DateUtils.convertToDate(date, format).clearTime();
+            this.blockData.start = DateUtils.convertToDate(date, format);
             this.getRow().needToUpdate = true;
         },
         end: function() {
             return this.blockData.end;
         },
-        setEnd: function(date, format) {
-            /*TODO: 
-             * duplication isAgregatorSolid, setStart
-             * agregatorBlock functionality need to create a class
-             */
-            if (this.getRow().order == -1) {
-                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    
-                    block.setEnd(date, format);
-                }
+        endAdjusted: function() {
+            var end = this.end().clone();
+
+            if (end.clearTime().compareTo(this.end()) > 0) {
+                return end().addDays(1);
             }
-            
+
+            return this.end().clone();
+        },
+        setEnd: function(date, format) {
             if (!format) {
                 format = this.options.dateFormat;
             }
-            this.blockData.end = DateUtils.convertToDate(date, format).clearTime();
+            this.blockData.end = DateUtils.convertToDate(date, format);
             this.getRow().needToUpdate = true;
         },
         color: function() {
@@ -2325,6 +2313,28 @@ boundary: {left : object/string right: object/string}
             }
 
             return true;
+        },
+        setStart: function(date, format) {
+            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                
+                block.setStart(date, format);
+            }
+
+            AbstractBlockModel.prototype.setStart.apply(this, arguments);
+        },
+        setEnd: function(date, format) {
+            if (this.getRow().order == -1) {
+                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+                while (blockIterator.hasNext()) {
+                    var block = blockIterator.next();
+                    
+                    block.setEnd(date, format);
+                }
+            }
+            
+            AbstractBlockModel.prototype.setEnd.apply(this, arguments);
         },
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
@@ -2713,7 +2723,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "End";
             
             this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
         initializeFrench: function() {
             this.zoomIn      = "Zoom +";
@@ -2732,7 +2742,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Fin";
             
             this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
         initializeRus: function() {
             this.zoomIn      = "Увеличить";
@@ -2751,7 +2761,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Конец"; 
 
             this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
-            this.dateFormat  = "dd/MM/yyyy";
+            this.dateFormat  = "dd/MM/yyyy HH:mm";
         },
     });
 

@@ -46,12 +46,12 @@
                                             expandBorder: false,
                                             mergeNeighbors: false,
                                             disabledPast: true,
-                                            currentDate: "2013-06-11",
-                                            boundary: {left: "2013-06-01", right: "2013-06-20"}
+                                            currentDate: "2013-06-11 00:00",
+                                            boundary: {left: "2013-06-01 00:00", right: "2013-06-20 00:00"}
                                         });
 
             chart.scheduler("setData", schedulerData );
-            chart.scheduler("updateData", updateData );
+            //chart.scheduler("updateData", updateData );
             chart.scheduler("addBlockCommand", "edit", function(blockModel) {
                 console.log(blockModel);
             });
