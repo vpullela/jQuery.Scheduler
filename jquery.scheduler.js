@@ -1283,8 +1283,10 @@ boundary: {left : object/string right: object/string}
         render: function() {
             var cellWidth = this.options.cellWidth;
             var cellHeight = this.options.cellHeight;
-            var size = DateUtils.daysBetween(this.model.start(), this.model.end());
-            var offset = DateUtils.daysBetween(this.options.boundary.getLeft(), this.model.start());
+            
+
+            var size = this.calculateSize();
+            var offset = this.calculateOffset();
 
             this.getJquery().css({
                 "width": ((size * cellWidth) - 3) + "px",
@@ -1318,6 +1320,21 @@ boundary: {left : object/string right: object/string}
             } else {
                 this.getJquery().removeClass("selected");
             }
+        },
+        calculateSize: function() {
+            var start = this.model.start().clone().clearTime();
+            var end = this.model.end().clone();
+
+            if (end.clearTime().compareTo(this.model.end()) < 0) {
+                end.addDays(1);
+            }
+
+            return DateUtils.daysBetween(start, end);
+        },
+        calculateOffset: function() {
+            var start = this.model.start().clone().clearTime();
+
+            return DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), start);
         },
         update:  function() {
             this.render();
@@ -2041,7 +2058,7 @@ boundary: {left : object/string right: object/string}
             if (!format) {
                 format = this.options.dateFormat;
             }
-            this.blockData.start = DateUtils.convertToDate(date, format).clearTime();
+            this.blockData.start = DateUtils.convertToDate(date, format);
             this.getRow().needToUpdate = true;
         },
         end: function() {
@@ -2051,7 +2068,7 @@ boundary: {left : object/string right: object/string}
             if (!format) {
                 format = this.options.dateFormat;
             }
-            this.blockData.end = DateUtils.convertToDate(date, format).clearTime();
+            this.blockData.end = DateUtils.convertToDate(date, format);
             this.getRow().needToUpdate = true;
         },
         color: function() {
