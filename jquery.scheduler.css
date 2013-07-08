@@ -73,7 +73,6 @@ div.scheduler {
 }
 
 /* Horizontal Header */
-
 div.scheduler-hzheader-month {
     width: 60px;
     height: 20px;
@@ -212,7 +211,6 @@ div.scheduler-menu-item.zoomout:hover {
 }
 
 /* Slider */
-
 div.scheduler-slide {
     overflow: auto;
 }
