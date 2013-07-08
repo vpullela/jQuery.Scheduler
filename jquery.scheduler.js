@@ -1285,8 +1285,8 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
             
 
-            var size = this.calculateSize();
-            var offset = this.calculateOffset();
+            var size = DateUtils.daysBetween(this.model.startAdjusted(), this.model.endAdjusted());
+            var offset = DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), this.model.startAdjusted());
 
             this.getJquery().css({
                 "width": ((size * cellWidth) - 3) + "px",
@@ -1320,21 +1320,6 @@ boundary: {left : object/string right: object/string}
             } else {
                 this.getJquery().removeClass("selected");
             }
-        },
-        calculateSize: function() {
-            var start = this.model.start().clone().clearTime();
-            var end = this.model.end().clone();
-
-            if (end.clearTime().compareTo(this.model.end()) < 0) {
-                end.addDays(1);
-            }
-
-            return DateUtils.daysBetween(start, end);
-        },
-        calculateOffset: function() {
-            var start = this.model.start().clone().clearTime();
-
-            return DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), start);
         },
         update:  function() {
             this.render();
@@ -1912,7 +1897,7 @@ boundary: {left : object/string right: object/string}
                 if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
                     blockToDelete.push(block);
                 }
-                else if (previousBlock && previousBlock.end().clone().compareTo(block.start()) > 0 ||
+                else if (previousBlock && previousBlock.endAdjusted().compareTo(block.startAdjusted()) > 0 ||
                         (this.options.mergeNeighbors && previousBlock && previousBlock.end().clone().compareTo(block.start()) == 0)) {
                     previousBlock.blockData.end = block.end().clone();
                     blockToDelete.push(block);
@@ -2054,6 +2039,9 @@ boundary: {left : object/string right: object/string}
         start: function() {
             return this.blockData.start;
         },
+        startAdjusted: function() {
+            return this.blockData.start.clone().clearTime();
+        },
         setStart: function(date, format) {
             if (!format) {
                 format = this.options.dateFormat;
@@ -2063,6 +2051,15 @@ boundary: {left : object/string right: object/string}
         },
         end: function() {
             return this.blockData.end;
+        },
+        endAdjusted: function() {
+            var end = this.end().clone();
+
+            if (end.clearTime().compareTo(this.end()) > 0) {
+                return end().addDays(1);
+            }
+
+            return this.end().clone();
         },
         setEnd: function(date, format) {
             if (!format) {
