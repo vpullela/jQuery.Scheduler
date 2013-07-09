@@ -1285,8 +1285,8 @@ boundary: {left : object/string right: object/string}
             var cellHeight = this.options.cellHeight;
             
 
-            var size = DateUtils.daysBetween(this.model.startAdjusted(), this.model.endAdjusted());
-            var offset = DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), this.model.startAdjusted());
+            var size = DateUtils.daysBetween(this.model.startDay(), this.model.endDay());
+            var offset = DateUtils.daysBetween(this.options.boundary.getLeft().clearTime(), this.model.startDay());
 
             this.getJquery().css({
                 "width": ((size * cellWidth) - 3) + "px",
@@ -1897,7 +1897,7 @@ boundary: {left : object/string right: object/string}
                 if (previousBlock && previousBlock.end().compareTo(block.end()) >= 0) {
                     blockToDelete.push(block);
                 }
-                else if (previousBlock && previousBlock.endAdjusted().compareTo(block.startAdjusted()) > 0 ||
+                else if (previousBlock && previousBlock.endDay().compareTo(block.startDay()) > 0 ||
                         (this.options.mergeNeighbors && previousBlock && previousBlock.end().clone().compareTo(block.start()) == 0)) {
                     previousBlock.blockData.end = block.end().clone();
                     blockToDelete.push(block);
@@ -2039,7 +2039,7 @@ boundary: {left : object/string right: object/string}
         start: function() {
             return this.blockData.start;
         },
-        startAdjusted: function() {
+        startDay: function() {
             return this.blockData.start.clone().clearTime();
         },
         setStart: function(date, format) {
@@ -2052,7 +2052,7 @@ boundary: {left : object/string right: object/string}
         end: function() {
             return this.blockData.end;
         },
-        endAdjusted: function() {
+        endDay: function() {
             var end = this.end().clone();
 
             if (end.clearTime().compareTo(this.end()) > 0) {
