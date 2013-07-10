@@ -223,8 +223,8 @@ div.scheduler-row {
 }
 
 div.scheduler-workbench {
-    background-size: 21px 26px;
-    background-position: 21px 28px;
+    background-size: 12px 26px;
+    background-position: 12px 28px;
     background-repeat: repeat;
 }
 
@@ -306,7 +306,7 @@ div.scheduler-block-text {
     height: 12px;
     font-size: 0.8em;
     color: #999;
-    padding: 2px 3px;
+    padding: 2px 1px;
 }
 
 /* block menu */
