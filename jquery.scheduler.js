@@ -559,8 +559,12 @@ boundary: {left : object/string right: object/string}
                     var w = dates[y][m].length * this.cellWidth;
                     monthsDiv.append($("<div>", {
                         "class": "scheduler-hzheader-month scheduler-nonselectable",
-                        "css": { "width": w + "px" }
+                        "css": {
+                            "width": w + "px",
+                            "overflow": "hidden"
+                         }
                     }).append(this.options.i18n.month[m] + "/" + y));
+                    
                     for (var d in dates[y][m]) {
                         var day = new HzHeaderDayView(this.options, dates[y][m][d]);
                         this.daysArray.push(day);
