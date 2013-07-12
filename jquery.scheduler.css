@@ -310,7 +310,7 @@ div.scheduler-block-text {
 }
 
 /* block menu */
-div.scheduler-block-menu {
+div.scheduler-context-menu {
     border: 1px solid #d0d0d0;
     position: absolute;
     z-index: 100;
@@ -318,14 +318,14 @@ div.scheduler-block-menu {
     display: none;
 }
 
-div.scheduler-block-menu-item {
+div.scheduler-context-menu-item {
     z-index: 100;
     margin: 1px;
     padding: 1px 4px 1px 4px;
     cursor: pointer;
 }
 
-div.scheduler-block-menu-item.selected {
+div.scheduler-context-menu-item.selected {
     background-color: #c0c0c0;
 }
 

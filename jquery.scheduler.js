@@ -830,10 +830,12 @@ boundary: {left : object/string right: object/string}
         render: function() {
             this.removeContent();
 
-            this.blockMenuView = new BlockMenuView(this.options, this.model.blockMenuModel);
+            this.blockMenuView = new ContextMenuView(this.options, this.model.blockMenuModel);
+            this.blockMenuView.getJquery().addClass("block-menu");
             this.appendJquery(this.blockMenuView);
             
-            this.workbenchMenuView = new BlockMenuView(this.options, this.model.workbenchMenuModel);
+            this.workbenchMenuView = new ContextMenuView(this.options, this.model.workbenchMenuModel);
+            this.workbenchMenuView.getJquery().addClass("workbench-menu");
             this.appendJquery(this.workbenchMenuView);
 
             var agregatorIterator = this.model.getIterator();
@@ -855,6 +857,10 @@ boundary: {left : object/string right: object/string}
 
             if (this.blockMenuView) {
                 this.blockMenuView.destroyJquery();
+            }
+
+            if (this.workbenchMenu) {
+                this.workbenchMenu.destroyJquery();
             }
 
             this.contentArray.length = 0;
@@ -1327,9 +1333,9 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * BlockMenuView class
+     * ContextMenuView class
      */
-    function BlockMenuView(options, model) {
+    function ContextMenuView(options, model) {
         this.options = options;
         this.model = model;
 
@@ -1337,12 +1343,12 @@ boundary: {left : object/string right: object/string}
 
         this._init();
     }
-    BlockMenuView.prototype = Object.create(AbstractView.prototype);
+    ContextMenuView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(BlockMenuView.prototype, {
+    $.extend(ContextMenuView.prototype, {
         _init: function() {
             var menu = $("<div>", {
-                "class" : "scheduler-block-menu",
+                "class" : "scheduler-context-menu",
             });
             this.setJquery(menu);
 
@@ -1355,7 +1361,7 @@ boundary: {left : object/string right: object/string}
             var commandIterator = this.model.getIterator();
             while (commandIterator.hasNext()) {
                 command = commandIterator.next();
-                var menuItem = new BlockMenuItemView(this.options, command);
+                var menuItem = new ContextMenuItemView(this.options, command);
                 this.appendJquery(menuItem);
                 this.content.push(menuItem);
             }
@@ -1388,21 +1394,21 @@ boundary: {left : object/string right: object/string}
     });
 
     /**
-     * BlockMenuItemView class
+     * ContextMenuItemView class
      */
-    function BlockMenuItemView(options, command) {
+    function ContextMenuItemView(options, command) {
         this.options = options;
         this.command = command;
         this.blockModel = undefined;
 
         this._init();
     }
-    BlockMenuItemView.prototype = Object.create(AbstractView.prototype);
+    ContextMenuItemView.prototype = Object.create(AbstractView.prototype);
 
-    $.extend(BlockMenuItemView.prototype, {
+    $.extend(ContextMenuItemView.prototype, {
         _init: function() {
             var menu = $("<div>", {
-                "class" : "scheduler-block-menu-item",
+                "class" : "scheduler-context-menu-item",
             }).text(this.command.getName());
 
             this.setJquery(menu);
