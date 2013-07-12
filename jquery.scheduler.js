@@ -43,6 +43,14 @@ boundary: {left : object/string right: object/string}
             this.chartView.addBlockCommand(name, callback);
         },
 
+        getOffsetByDate: function(date, format) {
+            return this.chartView.getOffsetByDate(date, format);
+        },
+
+        getCurrentDate: function() {
+            return this.chartView.getCurrentDate();
+        }, 
+
         _setOption: function (name, value) {
             if (name === "width") {
                 this.chartView.setWidth(value);
@@ -218,6 +226,19 @@ boundary: {left : object/string right: object/string}
 
         getAgregatorMetadata: function(data) {
             return this.workbenchModel.getAgregatorMetadata();
+        },
+
+        getOffsetByDate: function(date, format) {
+            if (!format) {
+                format = this.options.dateFormat;
+            }
+
+            date = DateUtils.convertToDate(date, format);
+            return this.workbenchModel.grid.getPosByDate(date);
+        },
+
+        getCurrentDate: function() {
+            return this.options.currentDate;
         },
 
         setWidth: function(width) {
