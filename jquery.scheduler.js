@@ -51,6 +51,14 @@ boundary: {left : object/string right: object/string}
             return this.chartView.getCurrentDate();
         }, 
 
+        getBlockData: function(position) {
+            return this.chartView.getBlockData(position);
+        },
+
+        resizeBlockTesting: function(position, leftDelta, widthDelta) {
+            this.chartView.resizeBlockTesting(position, leftDelta, widthDelta);
+        },
+
         _setOption: function (name, value) {
             if (name === "width") {
                 this.chartView.setWidth(value);
@@ -239,6 +247,21 @@ boundary: {left : object/string right: object/string}
 
         getCurrentDate: function() {
             return this.options.currentDate;
+        },
+
+        getBlockData: function(position) {
+            blockData = {};
+
+            block =  this.workbenchModel.getBlockByPosition(position);
+            if (block && block.blockData) {
+                blockData = block.blockData;
+            }
+
+            return blockData;
+        },
+
+        resizeBlockTesting: function(position, leftDelta, widthDelta) {
+            this.workbenchModel.resizeBlockTesting(position, leftDelta, widthDelta);
         },
 
         setWidth: function(width) {
@@ -1663,6 +1686,20 @@ boundary: {left : object/string right: object/string}
 
                 this.addBlock(newPosition, newBlockData);
             }
+        },
+        resizeBlockTesting: function(position, leftDelta, widthDelta) {
+            // @TODO: workaroud function for testing resizing blocks
+            // emulates functuinality of set functuins onResizeBlockStart, onResizeBlock, onResizeBlockStop
+            var resizedBlockModel = this.getBlockByPosition(position);
+            resizedBlockModel.select();
+
+            var blockIterator = this.selectedBlocks.getIterator();
+            while (blockIterator.hasNext()) {
+                var blockModel = blockIterator.next();
+                blockModel.deltaResize(leftDelta, widthDelta);
+            }
+ 
+            this.updateSelectedBlocks();
         },
         
         update: function() {
