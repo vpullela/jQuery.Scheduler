@@ -984,7 +984,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                blockModel.resize(ui.helper.position().left, ui.helper.width());
+                blockModel.incrementalResize(ui.helper.position().left, ui.helper.width());
             }
         },
         onResizeBlockStop: function(e, ui) {
@@ -1015,7 +1015,7 @@ boundary: {left : object/string right: object/string}
             var blockIterator = this.model.selectedBlocks.getIterator();
             while (blockIterator.hasNext()) {
                 var blockModel = blockIterator.next();
-                blockModel.resize(ui.position.left, ui.helper.width());
+                blockModel.incrementalResize(ui.position.left, ui.helper.width());
             }
         },
         onDragBlockStop: function(e, ui) {
@@ -2161,12 +2161,15 @@ boundary: {left : object/string right: object/string}
             };
         },
 
-        resize: function(left, width) {
+        incrementalResize: function(left, width) {
             var deltaWidth = this.width ? width - this.width : this.width;
             var deltaLeft = left - this.left;
             this.width = width;
             this.left = left;
             
+            this.deltaResize(deltaLeft, deltaWidth);
+        },
+        deltaResize: function(deltaLeft, deltaWidth) {
             if (this.isDisabled()) {
                 return;
             }
