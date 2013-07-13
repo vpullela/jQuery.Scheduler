@@ -10,8 +10,6 @@ var resizeRightSelector = ".scheduler-block > .ui-resizable-e";
 var dateFormat = "dd/MM/yyyy HH:mm";
 
 var utils = require('utils');
-var url1 = "./pages/page1/index.html";
-var url2 = "./pages/page2/index.html";
 
 casper.options.viewportSize = {width: 1024, height: 768};
 

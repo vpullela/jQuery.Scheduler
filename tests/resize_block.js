@@ -1,3 +1,4 @@
+var url = "pages/page2/index.html";
 
 casper.test.begin("DOM structure", function(test) {
     casper.start(url).then(function() {
