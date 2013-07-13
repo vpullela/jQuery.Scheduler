@@ -1,5 +1,6 @@
+
 casper.test.begin("DOM structure", function(test) {
-    casper.start(url2, function() {
+    casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
 
         test.assertSelectorExists(workbenchRowSelector, "existed: workbench row");
@@ -14,7 +15,7 @@ casper.test.begin("DOM structure", function(test) {
 
 casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
 
-    casper.start(url2, function() {
+    casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
 
         test.assertDoesntExist(resizeRightSelector, "not existed: resize right");
@@ -62,7 +63,7 @@ casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
 
 casper.test.begin("API Resize Block to right +5 days", function(test) {
 
-    casper.start(url2, function() {
+    casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
 
 

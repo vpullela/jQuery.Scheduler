@@ -1,6 +1,6 @@
+
 casper.test.begin("DOM structure", function(test) {
-    casper.start(url1, function() {
-        test.comment(casper.getCurrentUrl());
+    casper.start(url).then(function() {
         test.assertSelectorExists(workbenchRowSelector, "existed: workbench row");
         test.assertSelectorExists(workbenchMenuSelector, "existed: workbench menu");
         test.assertSelectorExists(blockMenuSelector, "existed: block menu");
@@ -11,7 +11,7 @@ casper.test.begin("DOM structure", function(test) {
 });
 
 casper.test.begin("Create Block On Click In Future", 8, function(test) { 
-    casper.start(url1, function() {
+    casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
 
         var workbenchRowBounds = casper.getElementBounds(workbenchRowSelector);
@@ -47,7 +47,7 @@ casper.test.begin("Create Block On Click In Future", 8, function(test) {
 });
 
 casper.test.begin("Create Block On Click In The Past", 6, function(test) { 
-    casper.start(url1, function() {
+    casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
 
         var workbenchRowBounds = casper.getElementBounds(workbenchRowSelector);
