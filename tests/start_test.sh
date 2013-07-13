@@ -8,7 +8,8 @@
 #--post=post-test.js      add the tests contained in post-test.js after having executed the whole test suite
 #--fail-fast              terminate the current test suite as soon as a first failure is encountered. 
 
-casperjs test --includes=../lib/jquery-1.5.1.min.js,\
+casperjs test --includes=\
+../lib/jquery-1.5.1.min.js,\
 ../lib/jquery-ui-1.8.14.custom.min.js,\
 ../lib/date.js,\
 ../jquery.scheduler.js,\
