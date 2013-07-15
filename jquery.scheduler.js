@@ -246,7 +246,7 @@ boundary: {left : object/string right: object/string}
         },
 
         getCurrentDate: function() {
-            return this.options.currentDate;
+            return this.options.currentDate.format(this.options.dateFormat);
         },
 
         getBlockData: function(position) {
@@ -255,6 +255,8 @@ boundary: {left : object/string right: object/string}
             block =  this.workbenchModel.getBlockByPosition(position);
             if (block && block.blockData) {
                 blockData = block.blockData;
+                blockData.start = blockData.start.format(this.options.dateFormat);
+                blockData.end = blockData.end.format(this.options.dateFormat);
             }
 
             return blockData;
@@ -1350,8 +1352,8 @@ boundary: {left : object/string right: object/string}
             });
             
             this.getJquery().attr(
-                "title", this.options.i18n.startBlock + ":\t" + this.model.start().toString(this.options.i18n.dateFormat) 
-                + "\n" + this.options.i18n.endBlock + ":\t" + this.model.end().toString(this.options.i18n.dateFormat)
+                "title", this.options.i18n.startBlock + ":\t" + this.model.start().format(this.options.i18n.dateFormat) 
+                + "\n" + this.options.i18n.endBlock + ":\t" + this.model.end().format(this.options.i18n.dateFormat)
             );
             
             if (this.model.color()) {
@@ -2145,8 +2147,8 @@ boundary: {left : object/string right: object/string}
         },
         getBlockDataJson: function() {
             var jsonData = $.extend(true, {}, this.blockData);
-            jsonData.start = jsonData.start.toString(this.options.dateFormat);
-            jsonData.end = jsonData.end.toString(this.options.dateFormat);
+            jsonData.start = jsonData.start.format(this.options.dateFormat);
+            jsonData.end = jsonData.end.format(this.options.dateFormat);
 
             return jsonData;
         },
@@ -2794,7 +2796,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "End";
             
             this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            this.dateFormat  = "dd/MM/yyyy HH:mm";
+            this.dateFormat  = "DD/MM/YYYY HH:mm";
         },
         initializeFrench: function() {
             this.zoomIn      = "Zoom +";
@@ -2813,7 +2815,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Fin";
             
             this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
-            this.dateFormat  = "dd/MM/yyyy HH:mm";
+            this.dateFormat  = "DD/MM/YYYY HH:mm";
         },
         initializeRus: function() {
             this.zoomIn      = "Увеличить";
@@ -2832,7 +2834,7 @@ boundary: {left : object/string right: object/string}
             this.endBlock    = "Конец"; 
 
             this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
-            this.dateFormat  = "dd/MM/yyyy HH:mm";
+            this.dateFormat  = "DD/MM/YYYY HH:mm";
         },
     });
 

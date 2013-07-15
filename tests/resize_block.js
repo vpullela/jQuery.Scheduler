@@ -32,11 +32,11 @@ casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
         };
         var blockAgregatorData = casper.getBlockData(position);
 
-        var blockStart = new Date(blockAgregatorData.start);
-        var blockEnd = new Date(blockAgregatorData.end)
+        var blockStart = moment(blockAgregatorData.start);
+        var blockEnd = moment(blockAgregatorData.end)
 
         var resizeDaysNumber = 5;
-        blockEnd.addDays(resizeDaysNumber);
+        blockEnd.add('days', resizeDaysNumber);
         var offset = casper.getOffsetByDate(blockEnd.toString(dateFormat));
 
         test.comment("-- trying to resize with casperjs mouseevents");
@@ -55,7 +55,7 @@ casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
             workbenchRowBounds.top + workbenchRowBounds.height/2
         );
         var blockInfo = this.getElementAttribute(blockSelector, "title");
-        var blockInfoBase = "Start:\t" + blockStart.toString(dateFormat) + "\nEnd:\t" + blockEnd.toString(dateFormat);
+        var blockInfoBase = "Start:\t" + blockStart.format(dateFormat) + "\nEnd:\t" + blockEnd.format(dateFormat);
         test.assert(blockInfo === blockInfoBase, "correct: block info during mouse resizing");
     }).run(function() {
         test.done();
@@ -76,22 +76,29 @@ casper.test.begin("API Resize Block to right +5 days", function(test) {
         };
         var blockAgregatorData = casper.getBlockData(position);
 
-        var blockStart = new Date(blockAgregatorData.start);
-        var blockEnd = new Date(blockAgregatorData.end)
+        var blockStart = moment(blockAgregatorData.start);
+        var blockEnd = moment(blockAgregatorData.end);
 
-        var resizeDaysNumber = 5;
-        blockEnd.addDays(resizeDaysNumber);
-        var offset = casper.getOffsetByDate(blockEnd.toString(dateFormat));
+        var resizeDaysNumber = 3;
+        blockEnd.add('days', resizeDaysNumber);
+        var offset = casper.getOffsetByDate(blockEnd.format(dateFormat));
+
 
         blockInfo =  casper.getElementInfo(blockSelector);
         test.comment("-- (workaround) resize block using resizeBlockTesting function");
-        casper.resizeBlock(position, 0, offset-blockInfo.x-blockInfo.width);
+
+        utils.dump(casper.resizeBlock(position, 0, offset-blockInfo.x-blockInfo.width).length);
+        utils.dump(offset-blockInfo.x-blockInfo.width);
+
 
         var blockInfo = this.getElementAttribute(blockSelector, "title");
-        var blockInfoBase = "Start:\t" + blockStart.toString(dateFormat) + "\nEnd:\t" + blockEnd.toString(dateFormat);
+        var blockInfoBase = "Start:\t" + blockStart.format(dateFormat) + "\nEnd:\t" + blockEnd.format(dateFormat);
+        utils.dump(blockInfoBase);
+        utils.dump(blockInfo);
         test.assert(blockInfo === blockInfoBase, "correct: block info during api resizing");
 
     }).run(function() {
+casper.capture('test.png');
         test.done();
     });
 });
