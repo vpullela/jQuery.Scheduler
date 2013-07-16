@@ -1682,8 +1682,8 @@ boundary: {left : object/string right: object/string}
                 }
                 
                 var newBlockData = {
-                    "start" : copiedBlock.start().clone().add('days',startDateDiff),
-                    "end" : copiedBlock.end().clone().add('days',startDateDiff)
+                    "start" : copiedBlock.start().add('days',startDateDiff),
+                    "end" : copiedBlock.end().add('days',startDateDiff)
                 };
 
                 this.addBlock(newPosition, newBlockData);
@@ -1867,11 +1867,12 @@ boundary: {left : object/string right: object/string}
         },
 
         addBlock: function(blockData) {
-            blockData.start = DateUtils.convertToDate(blockData.start, this.options.dateFormat);
-            blockData.end = DateUtils.convertToDate(blockData.end, this.options.dateFormat);
+            var blockDataNew = $.extend(true, {}, blockData);
+            blockDataNew.start = DateUtils.convertToDate(blockData.start.clone(), this.options.dateFormat);
+            blockDataNew.end = DateUtils.convertToDate(blockData.end.clone(), this.options.dateFormat);
 
             var blockList = this.getBlockList();
-            blockList.push(blockData);
+            blockList.push(blockDataNew);
 
             this.setBlockList(blockList);
             this.notifyObservers();
@@ -1968,8 +1969,8 @@ boundary: {left : object/string right: object/string}
                     blockToDelete.push(block);
                 }
                 else if (previousBlock && previousBlock.endDay() > block.startDay() ||
-                        (this.options.mergeNeighbors && previousBlock && previousBlock.end() == block.start())) {
-                    previousBlock.blockData.end = block.end().clone();
+                        (this.options.mergeNeighbors && previousBlock && previousBlock.end().isSame(block.start()) )) {
+                    previousBlock.setEnd(block.end());
                     blockToDelete.push(block);
                 }
                 else {
@@ -2021,9 +2022,9 @@ boundary: {left : object/string right: object/string}
                     block.agregatorBlock = agregatorBlock;
                 }
                 else if (agregatorBlock && agregatorBlock.end() >= block.start() ||
-                        (this.options.mergeNeighbors && agregatorBlock && agregatorBlock.end() == block.start())) {
+                        (this.options.mergeNeighbors && agregatorBlock && agregatorBlock.end().isSame(block.start()) )) {
                     /* TODO: add 2 setter to update all the agregated blocks and just for agregator */
-                    agregatorBlock.blockData.end = block.end().clone();
+                    agregatorBlock.setEnd(block.end());
                     agregatorBlock.blockData.agregatedBlocks.push(block);
                     block.agregatorBlock = agregatorBlock;
                 }
@@ -2088,10 +2089,10 @@ boundary: {left : object/string right: object/string}
         } else {
             /* calculate max/min dates  */
             if (this.start() < this.options.boundary.getLeft()) {
-                this.options.boundary.setLeft(this.start().clone());
+                this.options.boundary.setLeft(this.start());
             }
             if (this.end() > this.options.boundary.getRight()) {
-                this.options.boundary.setRight(this.end().clone());
+                this.options.boundary.setRight(this.end());
             }
         }
 
@@ -2107,10 +2108,10 @@ boundary: {left : object/string right: object/string}
 
     $.extend(AbstractBlockModel.prototype, {
         start: function() {
-            return this.blockData.start;
+            return moment(this.blockData.start);
         },
         startDay: function() {
-            return this.blockData.start.clone().startOf('day');
+            return this.start().startOf('day');
         },
         setStart: function(date, format) {
             if (!format) {
@@ -2120,16 +2121,16 @@ boundary: {left : object/string right: object/string}
             this.getRow().needToUpdate = true;
         },
         end: function() {
-            return this.blockData.end;
+            return moment(this.blockData.end);
         },
         endDay: function() {
-            var end = this.end().clone();
+            var end = this.end();
 
-            if (end.startOf('day') > this.end() > 0) {
-                return end().add('days',1);
+            if (end.startOf('day') < this.end()) {
+                return end.add('days',1);
             }
 
-            return this.end().clone();
+            return this.end();
         },
         setEnd: function(date, format) {
             if (!format) {
@@ -2207,11 +2208,11 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            this.start().add('days',days);
+            this.setStart(this.start().add('days',days));
             this.getRow().needToUpdate = true;
 
             if (this.start() >= this.end()) {
-                this.end().add('days',days);
+                this.setEnd(this.end().add('days',days));
             }
         },
         resizeRight: function(days) {
@@ -2219,11 +2220,11 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            this.end().add('days',days);
+            this.setEnd(this.end().add('days',days));
             this.getRow().needToUpdate = true;
 
             if (this.end() <= this.start()) {
-                this.start().add('days',days);
+                this.setStart(this.start().add('days',days));
             }
         },
         drag: function(days) {
@@ -2231,14 +2232,14 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            this.start().add('days',days);
-            this.end().add('days',days);
+            this.setStart(this.start().add('days',days));
+            this.setEnd(this.end().add('days',days));
             this.getRow().needToUpdate = true;
         },
         
         fitToLeftBoundary: function(days) {
-            if (this.start().clone().add('days',days) < this.boundary.getLeft()) {
-                this.blockData.start = this.boundary.getLeft().clone();
+            if (this.start().add('days',days) < this.boundary.getLeft()) {
+                this.setStart(this.boundary.getLeft().clone());
                 this.getRow().needToUpdate = true;
                 return true;
             }
@@ -2246,7 +2247,7 @@ boundary: {left : object/string right: object/string}
         },
         fitToRightBoundary: function(days) {
             if (this.end().clone().add('days',days) > this.boundary.getRight()) {
-                this.blockData.end = this.boundary.getRight().clone();
+                this.setEnd(this.boundary.getRight().clone());
                 this.getRow().needToUpdate = true;
                 return true;
             }
@@ -2318,8 +2319,8 @@ boundary: {left : object/string right: object/string}
 
             var startDiff = agregatorBlock.start() - this.start();
             if (startDiff > 0) {
-                this.start().add({ "milliseconds": startDiff});
-                this.end().add({ "milliseconds": startDiff });
+                this.setStart(this.start().add("milliseconds", startDiff));
+                this.setEnd(this.end().add("milliseconds", startDiff));
 
                 startDiff = 0;
                 blockChanged = true;
@@ -2328,8 +2329,8 @@ boundary: {left : object/string right: object/string}
 
             var endDiff = agregatorBlock.end() - this.end();
             if (endDiff < 0) {
-                this.end().add({ "milliseconds": endDiff});
-                this.start().add({ "milliseconds": Math.max(endDiff, startDiff)});
+                this.setEnd(this.end().add("milliseconds", endDiff));
+                this.setStart(this.start().add("milliseconds", Math.max(endDiff, startDiff)));
                 
                 blockChanged = true;
                 this.getRow().needToUpdate = true;
@@ -2380,34 +2381,12 @@ boundary: {left : object/string right: object/string}
                     }
                 }
 
-                if (!blockInRow || !this.start() == blockInRow.start() || !this.end() == blockInRow.end() ) {
+                if (!blockInRow || !this.start().isSame(blockInRow.start()) || !this.end().isSame(blockInRow.end()) ) {
                     return false;
                 }
             }
 
             return true;
-        },
-        setStart: function(date, format) {
-            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-            while (blockIterator.hasNext()) {
-                var block = blockIterator.next();
-                
-                block.setStart(date, format);
-            }
-
-            AbstractBlockModel.prototype.setStart.apply(this, arguments);
-        },
-        setEnd: function(date, format) {
-            if (this.getRow().order == -1) {
-                var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
-                while (blockIterator.hasNext()) {
-                    var block = blockIterator.next();
-                    
-                    block.setEnd(date, format);
-                }
-            }
-            
-            AbstractBlockModel.prototype.setEnd.apply(this, arguments);
         },
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
@@ -2439,11 +2418,11 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.start().clone().add('days',days) > this.end()) {
+            if (this.start().add('days',days) > this.end()) {
                 return;
             }
 
-            this.start().add('days',days);
+            this.setStart(this.start().add('days',days));
             this.getRow().needToUpdate = true;
         },
         resizeRight: function(days) {
@@ -2451,11 +2430,11 @@ boundary: {left : object/string right: object/string}
                 return;
             }
             
-            if (this.end().clone().add('days',days) < this.start()) {
+            if (this.end().add('days',days) < this.start()) {
                 return;
             }
             
-            this.end().add('days',days);
+            this.setEnd(this.end().add('days',days));
             this.getRow().needToUpdate = true;
         },
     });
