@@ -1868,8 +1868,8 @@ boundary: {left : object/string right: object/string}
 
         addBlock: function(blockData) {
             var blockDataNew = $.extend(true, {}, blockData);
-            blockDataNew.start = DateUtils.convertToDate(blockData.start.clone(), this.options.dateFormat);
-            blockDataNew.end = DateUtils.convertToDate(blockData.end.clone(), this.options.dateFormat);
+            blockDataNew.start = DateUtils.convertToDate(blockData.start, this.options.dateFormat);
+            blockDataNew.end = DateUtils.convertToDate(blockData.end, this.options.dateFormat);
 
             var blockList = this.getBlockList();
             blockList.push(blockDataNew);
