@@ -37,7 +37,7 @@ casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
 
         var resizeDaysNumber = 5;
         blockEnd.add('days', resizeDaysNumber);
-        var offset = casper.getOffsetByDate(blockEnd.toString(dateFormat));
+        var offset = casper.getOffsetByDate(blockEnd.format(dateFormat));
 
         test.comment("-- trying to resize with casperjs mouseevents");
         casper.mouseEvent("mouseover", resizeRightSelector);
@@ -86,19 +86,14 @@ casper.test.begin("API Resize Block to right +5 days", function(test) {
 
         blockInfo =  casper.getElementInfo(blockSelector);
         test.comment("-- (workaround) resize block using resizeBlockTesting function");
-
-        utils.dump(casper.resizeBlock(position, 0, offset-blockInfo.x-blockInfo.width).length);
-        utils.dump(offset-blockInfo.x-blockInfo.width);
-
+        casper.resizeBlock(position, 0, offset-blockInfo.x-blockInfo.width);
 
         var blockInfo = this.getElementAttribute(blockSelector, "title");
         var blockInfoBase = "Start:\t" + blockStart.format(dateFormat) + "\nEnd:\t" + blockEnd.format(dateFormat);
-        utils.dump(blockInfoBase);
-        utils.dump(blockInfo);
+
         test.assert(blockInfo === blockInfoBase, "correct: block info during api resizing");
 
     }).run(function() {
-casper.capture('test.png');
         test.done();
     });
 });

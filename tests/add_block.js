@@ -39,7 +39,7 @@ casper.test.begin("Create Block On Click In Future", 8, function(test) {
         test.assertExists(blockSelector, "existed: block");
 
         var blockInfo = casper.getElementAttribute(blockSelector, "title");
-        var blockInfoBase = "Start:\t" + blockStartDate.toString(dateFormat) + "\nEnd:\t" + blockStartDate.clone().add('days', 1).toString(dateFormat);
+        var blockInfoBase = "Start:\t" + blockStartDate.format(dateFormat) + "\nEnd:\t" + blockStartDate.clone().add('days', 1).format(dateFormat);
 
         test.assert(blockInfo === blockInfoBase, "correct: block info");
     }).run(function() {
@@ -53,7 +53,7 @@ casper.test.begin("Create Block On Click In The Past", 6, function(test) {
 
         var workbenchRowBounds = casper.getElementBounds(workbenchRowSelector);
         var blockStartDate = moment(casper.getCurrentDate()).add('days', -1);
-        var offset = casper.getOffsetByDate(blockStartDate.toString(dateFormat));
+        var offset = casper.getOffsetByDate(blockStartDate.fotmat(dateFormat));
 
         test.assertDoesntExist(blockSelector, "not existed: block");
         test.assertNotVisible(workbenchMenuSelector, "not visible: workbench menu");
