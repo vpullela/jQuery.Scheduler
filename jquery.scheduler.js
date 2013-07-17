@@ -2173,10 +2173,6 @@ boundary: {left : object/string right: object/string}
             this.deltaResize(deltaLeft, deltaWidth);
         },
         deltaResize: function(deltaLeft, deltaWidth) {
-            if (this.isDisabled()) {
-                return;
-            }
-
             var blockChanged = false;
 
             if (deltaLeft < 0)
