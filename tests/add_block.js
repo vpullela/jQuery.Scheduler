@@ -53,7 +53,7 @@ casper.test.begin("Create Block On Click In The Past", 6, function(test) {
 
         var workbenchRowBounds = casper.getElementBounds(workbenchRowSelector);
         var blockStartDate = moment(casper.getCurrentDate()).add('days', -1);
-        var offset = casper.getOffsetByDate(blockStartDate.fotmat(dateFormat));
+        var offset = casper.getOffsetByDate(blockStartDate.format(dateFormat));
 
         test.assertDoesntExist(blockSelector, "not existed: block");
         test.assertNotVisible(workbenchMenuSelector, "not visible: workbench menu");
