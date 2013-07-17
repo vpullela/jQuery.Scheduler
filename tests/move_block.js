@@ -103,7 +103,7 @@ casper.test.begin("Mouse Move Block to right -5 days", function(test) {
 });
 
 
-casper.test.begin("Mouse Move Block to into past", function(test) {
+casper.test.begin("Mouse Move Block into past", function(test) {
 
     casper.start(url).then(function() {
         test.comment(casper.getCurrentUrl());
