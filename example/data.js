@@ -87,13 +87,13 @@ var schedulerData = [
     }, 
     {
         metadata: {
-            name: "Feature 8"
+            name: "Feature 8", boundary: {left :"2013-06-24 00:00" }
         },
         data: [
             {
                 metadata: { name: "Sub 1" },
-                data: [ { start: "2013-06-07 00:00", end: "2013-06-09 00:00", color: "#f0f0f0" }]
-            }            
+                data: [ ]
+            }
         ]
     }
 ];
