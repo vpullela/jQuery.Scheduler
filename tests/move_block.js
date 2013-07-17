@@ -120,8 +120,6 @@ casper.test.begin("Mouse Move Block into past", function(test) {
         var blockEnd = moment(blockAgregatorData.end)
 
         var currentDate = casper.getCurrentDate();
-        utils.dump(currentDate);
-
 
         var resizeDaysNumber = -5;
         blockStart.add("days", resizeDaysNumber);
