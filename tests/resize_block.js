@@ -79,7 +79,7 @@ casper.test.begin("API Resize Block to right +5 days", function(test) {
         var blockStart = moment(blockAgregatorData.start);
         var blockEnd = moment(blockAgregatorData.end);
 
-        var resizeDaysNumber = 3;
+        var resizeDaysNumber = 5;
         blockEnd.add('days', resizeDaysNumber);
         var offset = casper.getOffsetByDate(blockEnd.format(dateFormat));
 
