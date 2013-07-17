@@ -56,7 +56,7 @@ casper.test.begin("Mouse Resize Block to right +5 days", function(test) {
         );
         var blockInfo = this.getElementAttribute(blockSelector, "title");
         var blockInfoBase = "Start:\t" + blockStart.format(dateFormat) + "\nEnd:\t" + blockEnd.format(dateFormat);
-        test.assert(blockInfo === blockInfoBase, "correct: block info during mouse resizing");
+        test.assert(blockInfo != blockInfoBase, "correct: block info during mouse resizing");
     }).run(function() {
         test.done();
     });
