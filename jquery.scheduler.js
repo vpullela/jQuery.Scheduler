@@ -2178,18 +2178,22 @@ boundary: {left : object/string right: object/string}
             }
 
             var blockChanged = false;
-            if (!this.isStarted() && deltaWidth == 0 && deltaLeft != 0) {
-                this.drag(deltaLeft / this.options.cellWidth);
+
+            if (deltaLeft < 0)
+            {
+                this.resizeLeft(deltaLeft / this.options.cellWidth)
+                this.resizeRight(deltaLeft / this.options.cellWidth);
                 blockChanged = true;
             }
-            else if (deltaWidth != 0 && deltaLeft == 0 )
+            else if (deltaLeft > 0) {
+                this.resizeRight(deltaLeft / this.options.cellWidth);
+                this.resizeLeft(deltaLeft / this.options.cellWidth)
+                blockChanged = true;
+            }
+
+            if (deltaWidth != 0 )
             {
                 this.resizeRight(deltaWidth / this.options.cellWidth);
-                blockChanged = true;
-            }
-            else if (!this.isStarted() && deltaWidth != 0 && deltaLeft != 0)
-            {
-                this.resizeLeft((-1) * deltaWidth / this.options.cellWidth)
                 blockChanged = true;
             }
 
@@ -2204,10 +2208,8 @@ boundary: {left : object/string right: object/string}
         },
 
         resizeLeft: function(days) {
-            if (this.fitToLeftBoundary(days)) {
-                return;
-            }
-            
+            days = this.fitLeftToBoundary(days);
+
             this.setStart(this.start().add('days',days));
             this.getRow().needToUpdate = true;
 
@@ -2216,10 +2218,8 @@ boundary: {left : object/string right: object/string}
             }
         },
         resizeRight: function(days) {
-            if (this.fitToRightBoundary(days)) {
-                return;
-            }
-            
+            days = this.fitRightToBoundary(days);
+
             this.setEnd(this.end().add('days',days));
             this.getRow().needToUpdate = true;
 
@@ -2227,31 +2227,36 @@ boundary: {left : object/string right: object/string}
                 this.setStart(this.start().add('days',days));
             }
         },
-        drag: function(days) {
-            if (this.fitToLeftBoundary(days) || this.fitToRightBoundary(days)) {
-                return;
+
+        fitRightToBoundary: function(days) {
+            modifiedDate = this.end().add('days', days);
+            
+            var extraDays = modifiedDate.diff(this.boundary.getLeft().clone().add('days', 1), 'days');
+            if (extraDays < 0) {
+                days = days - extraDays;
             }
 
-            this.setStart(this.start().add('days',days));
-            this.setEnd(this.end().add('days',days));
-            this.getRow().needToUpdate = true;
-        },
-        
-        fitToLeftBoundary: function(days) {
-            if (this.start().add('days',days) < this.boundary.getLeft()) {
-                this.setStart(this.boundary.getLeft().clone());
-                this.getRow().needToUpdate = true;
-                return true;
+            extraDays = modifiedDate.diff(this.boundary.getRight(), 'days');
+            if (extraDays > 0) {
+                days = days - extraDays;
             }
-            return false;
+
+            return days;
         },
-        fitToRightBoundary: function(days) {
-            if (this.end().clone().add('days',days) > this.boundary.getRight()) {
-                this.setEnd(this.boundary.getRight().clone());
-                this.getRow().needToUpdate = true;
-                return true;
+        fitLeftToBoundary: function(days) {
+            modifiedDate = this.start().add('days', days);
+            
+            var extraDays = modifiedDate.diff(this.boundary.getLeft(), 'days');
+            if (extraDays < 0) {
+                days = days - extraDays;
             }
-            return false
+
+            extraDays = modifiedDate.diff(this.boundary.getRight().clone().add('days', -1), 'days');
+            if (extraDays > 0) {
+                days = days - extraDays;
+            }
+
+            return days;
         },
         
         select: function() {
@@ -2412,30 +2417,6 @@ boundary: {left : object/string right: object/string}
             } else {
                 return false;
             }
-        },
-        resizeLeft: function(days) {
-            if (this.fitToLeftBoundary(days)) {
-                return;
-            }
-            
-            if (this.start().add('days',days) > this.end()) {
-                return;
-            }
-
-            this.setStart(this.start().add('days',days));
-            this.getRow().needToUpdate = true;
-        },
-        resizeRight: function(days) {
-            if (this.fitToRightBoundary(days)) {
-                return;
-            }
-            
-            if (this.end().add('days',days) < this.start()) {
-                return;
-            }
-            
-            this.setEnd(this.end().add('days',days));
-            this.getRow().needToUpdate = true;
         },
     });
 
