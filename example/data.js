@@ -92,7 +92,7 @@ var schedulerData = [
         data: [
             {
                 metadata: { name: "Sub 1" },
-                data: [ ]
+                data: [ { start: "2013-06-07 00:00", end: "2013-06-09 00:00" } ]
             }
         ]
     }
