@@ -97,3 +97,41 @@ casper.test.begin("API Resize Block to right +5 days", function(test) {
         test.done();
     });
 });
+
+casper.test.begin("API Resize Block to left -5 days", function(test) {
+
+    casper.start(url).then(function() {
+        test.comment(casper.getCurrentUrl());
+
+
+        var workbenchRowBounds = casper.getElementBounds(workbenchRowSelector);
+        var position = {
+            agregator: 0,
+            row: -1,
+            block: 0
+        };
+        var blockAgregatorData = casper.getBlockData(position);
+
+        var blockStart = moment(blockAgregatorData.start);
+        var blockEnd = moment(blockAgregatorData.end);
+
+        var resizeDaysNumber = -5;
+        blockStart.add('days', resizeDaysNumber);
+        var offset = casper.getOffsetByDate(blockStart.format(dateFormat)) + 1;
+
+
+        blockInfo =  casper.getElementInfo(blockSelector);
+        test.comment("-- (workaround) resize block using resizeBlockTesting function");
+
+        casper.resizeBlock(position, offset-blockInfo.x, Math.abs(offset-blockInfo.x));
+
+        var blockInfo = this.getElementAttribute(blockSelector, "title");
+        var blockInfoBase = "Start:\t" + blockStart.format(dateFormat) + "\nEnd:\t" + blockEnd.format(dateFormat);
+
+        test.assert(blockInfo === blockInfoBase, "correct: block info during api resizing");
+
+    }).run(function() {
+        casper.capture("test.png");
+        test.done();
+    });
+});
