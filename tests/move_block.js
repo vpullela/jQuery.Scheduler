@@ -46,10 +46,7 @@ casper.test.begin("Mouse Move Block to right +5 days", function(test) {
             offset,
             workbenchRowBounds.top + workbenchRowBounds.height/2
         );
-        casper.mouse.click(
-            offset,
-            workbenchRowBounds.top + workbenchRowBounds.height/2
-        );
+
         var blockInfo = this.getElementAttribute(blockSelector, "title");
         var blockInfoBase = "Start:\t" + blockStart.add("days", 1).format(dateFormat) + "\nEnd:\t" + blockEnd.add("days", 1).format(dateFormat);
         test.assert(blockInfo === blockInfoBase, "correct: block info during mouse moving");
@@ -90,10 +87,7 @@ casper.test.begin("Mouse Move Block to right -5 days", function(test) {
             offset,
             workbenchRowBounds.top + workbenchRowBounds.height/2
         );
-        casper.mouse.click(
-            offset,
-            workbenchRowBounds.top + workbenchRowBounds.height/2
-        );
+
         var blockInfo = this.getElementAttribute(blockSelector, "title");
         var blockInfoBase = "Start:\t" + blockStart.add("days", 1).format(dateFormat) + "\nEnd:\t" + blockEnd.add("days", 1).format(dateFormat);
         test.assert(blockInfo === blockInfoBase, "correct: block info during mouse moving");
@@ -116,15 +110,12 @@ casper.test.begin("Mouse Move Block into past", function(test) {
         };
         var blockAgregatorData = casper.getBlockData(position);
 
-        var blockStart = moment(blockAgregatorData.start);
-        var blockEnd = moment(blockAgregatorData.end)
+        var currentDate = moment(casper.getCurrentDate());
+        currentDate.add('days', -4);
 
-        var currentDate = casper.getCurrentDate();
+        var offset = casper.getOffsetByDate(currentDate.format(dateFormat));
 
-        var resizeDaysNumber = -5;
-        blockStart.add("days", resizeDaysNumber);
-        blockEnd.add("days", resizeDaysNumber);
-        var offset = casper.getOffsetByDate(blockEnd.format(dateFormat));
+        casper.mouseEvent("click", ".scheduler-vtheader-agregator-toggle");
 
         test.comment("-- trying to move with casperjs mouseevents");
         casper.mouseEvent("mouseover", blockSelector);
@@ -137,13 +128,11 @@ casper.test.begin("Mouse Move Block into past", function(test) {
             offset,
             workbenchRowBounds.top + workbenchRowBounds.height/2
         );
-        casper.mouse.click(
-            offset,
-            workbenchRowBounds.top + workbenchRowBounds.height/2
-        );
+
         var blockInfo = this.getElementAttribute(blockSelector, "title");
-        var blockInfoBase = "Start:\t" + blockStart.add("days", 1).format(dateFormat) + "\nEnd:\t" + blockEnd.add("days", 1).format(dateFormat);
+        var blockInfoBase = "Start:\t" + currentDate.clone().add("days", -1).format(dateFormat) + "\nEnd:\t" + currentDate.clone().add("days", 1).format(dateFormat);
         test.assert(blockInfo === blockInfoBase, "correct: block info during mouse moving");
+
     }).run(function() {
         test.done();
     });
