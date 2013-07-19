@@ -2073,10 +2073,10 @@ boundary: {left : object/string right: object/string}
         if (!this.options.expandBorder) {
             /* fit to boundary */
             if (this.start() < this.boundary.getLeft()
-                && this.end() > this.boundary.getLeft()) {
+                && this.end() < this.boundary.getLeft()) {
                 throw "wrong period";
             }
-            if (this.start() < this.boundary.getRight()
+            if (this.start() > this.boundary.getRight()
                 && this.end() > this.boundary.getRight()) {
                 throw "wrong period";
             }
