@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+
+    <script type="text/javascript" src="../config.js"></script>
+    <script type="text/javascript" src="../lazyload.js"></script>
+
+    <script type="text/javascript" src="data.js"></script>
+    <script type="text/javascript">
+    LazyLoad.css(cssFiles);
+    LazyLoad.js(jsFiles, function() {
+
+        var chart = $("#chart").scheduler({
+            width: 900,
+            expandBorder: false,
+            mergeNeighbors: false,
+            disabledPast: true,
+            currentDate: "2013-06-11 00:00",
+            boundary: {left: "2013-06-01 00:00", right: "2013-08-01 00:00"},
+            data: schedulerData
+        });
+
+        $("#get_data").bind("click", function(event, data) {console.log(chart.scheduler("resizeBlockTesting",{agregator:0, row:-1, block:0} ,0, 38));});
+    });
+    </script>
+
+    <title>jQuery Scheduler</title>
+</head>
+<body>
+
+    <div id="chart"></div>
+    <input id="get_data" type="button" value="data"></input>
+
+</body>
+</html>
