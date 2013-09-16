@@ -2415,7 +2415,7 @@ boundary: {left : object/string right: object/string}
         select: function() {
             AbstractBlockModel.prototype.select.apply(this, arguments);
     
-            var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
+            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
             while(blockIterator.hasNext()) {
                 var block = blockIterator.next();
                 block.select();
@@ -2424,7 +2424,7 @@ boundary: {left : object/string right: object/string}
         unselect: function() {
             AbstractBlockModel.prototype.unselect.apply(this, arguments);
     
-            var blockIterator = new ArrayIterator(this.blockData.agregatedBlocks);
+            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
             while(blockIterator.hasNext()) {
                 var block = blockIterator.next();
                 block.unselect();
@@ -2434,7 +2434,7 @@ boundary: {left : object/string right: object/string}
             if (this.blockData.agregatedBlocks) {
                 return this.blockData.agregatedBlocks;
             } else {
-                return false;
+                return [];
             }
         },
     });
