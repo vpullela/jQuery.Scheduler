@@ -1043,7 +1043,9 @@ boundary: {left : object/string right: object/string}
                 return;
             }
 
-            this.blockMenuView.showAt(blockModel, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+            var menuCoord = this.calculateMenuCoordinates(e.pageX, e.pageY, this.blockMenuView);
+
+            this.blockMenuView.showAt(blockModel, menuCoord);
         },
 
         onClickOnContainer: function(e) {
@@ -1068,9 +1070,30 @@ boundary: {left : object/string right: object/string}
                 event: e,
             }
 
-            this.workbenchMenuView.showAt(data, e.pageX - this.getJquery().offset().left - 3, e.pageY - this.getJquery().offset().top - 3);
+            var menuCoord = this.calculateMenuCoordinates(e.pageX, e.pageY, this.workbenchMenuView);
+
+            this.workbenchMenuView.showAt(data, menuCoord);
             return;
         },
+
+        calculateMenuCoordinates: function(pageX, pageY, menuView) {
+            var coord = {
+                x : pageX - this.getJquery().offset().left - 3,
+                y : pageY - this.getJquery().offset().top - 3
+            }
+            var menuHeight = menuView.getJquery().height();
+            var menuWidth = menuView.getJquery().width();
+            
+            if (coord.x + menuWidth > this.getJquery().width()) {
+                coord.x  = this.getJquery().width() - menuWidth - 2;
+            }
+
+            if (coord.y + menuHeight > this.getJquery().height()) {
+                coord.y = this.getJquery().height() - menuHeight;
+            }
+
+            return coord;
+        }
     });
 
     /**
@@ -1420,15 +1443,15 @@ boundary: {left : object/string right: object/string}
             this.getJquery().bind("mouseleave", $.proxy(this.onMouseLeave, this));
             this.getJquery().bind("click", $.proxy(this.onMouseLeave, this));
         },
-        showAt: function(blockModel, left, top) {
+        showAt: function(blockModel, coord) {
             /* TODO: optimize rerendering using notification */
             this.render();
             this.setBlockModel(blockModel);
 
             this.getJquery().css({
                 "display" : "inline",
-                "left": left,
-                "top": top,
+                "left": coord.x,
+                "top": coord.y,
             });
         },
         onMouseLeave: function() {
