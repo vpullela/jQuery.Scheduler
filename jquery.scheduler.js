@@ -2166,6 +2166,11 @@ boundary: {left : object/string right: object/string}
             return this.blockData.color;
         },
 
+        update: function(start, end, format) {
+            this.setStart(start, format);
+            this.setEnd(end, format);
+        },
+
         getBlockData: function() {
             return this.blockData;
         },
@@ -2435,6 +2440,17 @@ boundary: {left : object/string right: object/string}
                 return this.blockData.agregatedBlocks;
             } else {
                 return [];
+            }
+        },
+
+        update: function(start, end, format) {
+            this.setStart(start, format);
+            this.setEnd(end, format);
+
+            var blockIterator = new ArrayIterator(this.getAgregatedBlocks());
+            while(blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                block.update(start, end, format);
             }
         },
     });
