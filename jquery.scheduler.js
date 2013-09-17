@@ -1994,7 +1994,12 @@ boundary: {left : object/string right: object/string}
                 }
                 else if (previousBlock && previousBlock.endDay() > block.startDay() ||
                         (this.options.mergeNeighbors && previousBlock && previousBlock.end().isSame(block.start()) )) {
-                    previousBlock.setEnd(block.end());
+                    //make end time the same as the start time 
+                    var endDate = block.end();
+                    endDate.hours(previousBlock.start().hours());
+                    endDate.minutes(previousBlock.start().minutes());
+
+                    previousBlock.setEnd(endDate);
                     blockToDelete.push(block);
                 }
                 else {
