@@ -1387,7 +1387,7 @@ boundary: {left : object/string right: object/string}
             this.getJquery().data("position", this.model.getPosition());
             
             // duration & agregation solid
-            var days = DateUtils.daysBetween(this.model.start(), this.model.end());
+            var days = DateUtils.daysBetween(this.model.start(), this.model.end(), true);
             var notSolidNotificator = "";
             if (this.model.getRow().order == -1 && !this.model.isAgregationSolid()) {
                 notSolidNotificator = "*";
@@ -2947,11 +2947,15 @@ boundary: {left : object/string right: object/string}
     * Date Lib
     */
     var DateUtils = {
-        daysBetween: function (start, end) {
+        daysBetween: function (start, end, roundUp) {
             if (!start || !end) { return 0; }
             start = moment(start); end = moment(end);
-
-            return end.diff(start, 'days');
+            
+            if (roundUp) {
+                return Math.round(end.diff(start, 'days', true));
+            } else  {
+                return end.diff(start, 'days');
+            }
         },
         convertToDate: function(date, format) {
             if (typeof date == "string") {
