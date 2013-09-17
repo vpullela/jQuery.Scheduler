@@ -6,6 +6,7 @@ var workbenchRullerSelector = ".scheduler-ruller";
 var workbenchRowSelector = ".scheduler-row";
 var blockSelector = ".scheduler-block";
 var resizeRightSelector = ".scheduler-block > .ui-resizable-e";
+var schedulerBlockText = ".scheduler-block-text";
 
 var dateFormat = "DD/MM/YYYY HH:mm";
 
