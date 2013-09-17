@@ -2952,7 +2952,7 @@ boundary: {left : object/string right: object/string}
             start = moment(start); end = moment(end);
             
             if (roundUp) {
-                return Math.round(end.diff(start, 'days', true));
+                return Math.ceil(end.diff(start, 'days', true));
             } else  {
                 return end.diff(start, 'days');
             }
