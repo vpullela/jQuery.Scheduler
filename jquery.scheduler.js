@@ -1387,11 +1387,12 @@ boundary: {left : object/string right: object/string}
             this.getJquery().data("position", this.model.getPosition());
             
             // duration & agregation solid
+            var days = DateUtils.daysBetween(this.model.start(), this.model.end());
             var notSolidNotificator = "";
             if (this.model.getRow().order == -1 && !this.model.isAgregationSolid()) {
                 notSolidNotificator = "*";
             }
-            this.textBlock.text(size + notSolidNotificator);
+            this.textBlock.text(days + notSolidNotificator);
 
             // selected
             if (this.model.selected) {
