@@ -13,4 +13,4 @@ casperjs test --includes=\
 ../lib/jquery-ui-1.8.14.custom.min.js,\
 ../lib/moment.min.js,\
 ../jquery.scheduler.js,\
-init.js add_block.js resize_block.js move_block.js boundary_restrictions.js
+init.js add_block.js resize_block.js move_block.js boundary_restrictions.js visualization_block.js
