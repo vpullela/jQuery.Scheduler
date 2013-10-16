@@ -387,22 +387,18 @@ boundary: {left : object/string right: object/string}
             /* name */
             var agregatorNameContainer = undefined;
             if (this.model.metadata.link) {
-                var agregatorNameContainer = $("<a>", {
+                agregatorNameContainer = $("<a>", {
                     "class" : "scheduler-vtheader-agregator-name scheduler-nonselectable",
                     "href" : this.model.metadata.link,
                     "target" : "blank" 
                 });
             } else {
-                var agregatorNameContainer = $("<div>", {
+                agregatorNameContainer = $("<div>", {
                     "class": "scheduler-vtheader-agregator-name scheduler-nonselectable"
                 });
             }
-            /** TODO: add name format customisation */
-            if (this.model.metadata["number"]) {
-                agregatorNameContainer.append(this.model.metadata['number'] + ". " + this.model.getName());
-            } else {
-                agregatorNameContainer.append(this.model.getName());
-            }
+
+            agregatorNameContainer.append(this.model.getName());
 
             this.getJquery().append(agregatorNameContainer);
 
