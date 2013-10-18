@@ -1651,6 +1651,14 @@ boundary: {left : object/string right: object/string}
                 block.select();
             }
         },
+        selectDatePeriod: function(startDate, endDate) {
+            var agregatorIterator = this.getIterator();
+            while (agregatorIterator.hasNext()) {
+                var agregator = agregatorIterator.next();
+                
+                this.getAgregator(i).getAgregatorRow().selectPeriod(startDate, endDate);
+            }
+        },
         selectArea: function(topPosition, startDate, bottomPosition, endDate) {
             /** TODO: add row selection */
             var agregatorIterator = this.getIterator();
