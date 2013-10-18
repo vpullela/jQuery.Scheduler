@@ -1641,6 +1641,16 @@ boundary: {left : object/string right: object/string}
 
             agregator.updateAgregatorRow();
         },
+        selectRow: function (position) {
+            var agregator = this.getAgregator(position.agregator);
+            var row = agregator.getRow(position.row);
+            var blockIterator = row.getIterator();
+
+            while (blockIterator.hasNext()) {
+                var block = blockIterator.next();
+                block.select();
+            }
+        },
         selectArea: function(topPosition, startDate, bottomPosition, endDate) {
             /** TODO: add row selection */
             var agregatorIterator = this.getIterator();
@@ -2519,6 +2529,12 @@ boundary: {left : object/string right: object/string}
             
                 data.workbenchModel.pasteCopiedBlocks(position, startDate)
             }));
+            this.addCommand(new CommandModel(this.options.i18n.selectRow, function(data) {
+                var element = $(data.event.currentTarget)
+                var position = element.data("position");
+
+                data.workbenchModel.selectRow(position);
+            }));
         },
         addCommand: function(command) {
             this.commandList.push(command);
@@ -2792,6 +2808,8 @@ boundary: {left : object/string right: object/string}
             this.startBlock  = "Start";
             this.endBlock    = "End";
             
+            this.selectRow   = "Select Row";
+
             this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
         },
@@ -2811,6 +2829,8 @@ boundary: {left : object/string right: object/string}
             this.startBlock  = "Début";
             this.endBlock    = "Fin";
             
+            this.selectRow   = "Sélectionner Ligne";
+
             this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
         },
@@ -2828,7 +2848,9 @@ boundary: {left : object/string right: object/string}
             this.editBlock   = "Редактировать";
             
             this.startBlock  = "Начало";
-            this.endBlock    = "Конец"; 
+            this.endBlock    = "Конец";
+
+            this.selectRow   = "Выделить Строку";
 
             this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
