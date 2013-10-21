@@ -1339,10 +1339,13 @@ boundary: {left : object/string right: object/string}
                 "class": "scheduler-block"
             });
 
+            this.status = this.options.i18n.planned;
             if (this.model.isDisabled()) {
                 block.addClass("disabled");
+                this.status = this.options.i18n.finished;
             } else if (this.model.isStarted()) {
                 block.addClass("started");
+                this.status = this.options.i18n.started;
             }
 
             this.setJquery(block);
@@ -1373,6 +1376,7 @@ boundary: {left : object/string right: object/string}
             this.getJquery().attr(
                 "title", this.options.i18n.startBlock + ":\t" + this.model.start().format(this.options.i18n.dateFormat) 
                 + "\n" + this.options.i18n.endBlock + ":\t" + this.model.end().format(this.options.i18n.dateFormat)
+                + "\n" + this.options.i18n.status +": " + this.status
             );
             
             if (this.model.color()) {
@@ -2818,6 +2822,11 @@ boundary: {left : object/string right: object/string}
 
             this.month       = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
+
+            this.status      = "Status";
+            this.planned     = "Planned";
+            this.started     = "Started";
+            this.finished    = "Finished";
         },
         initializeFrench: function() {
             this.zoomIn      = "Zoom +";
@@ -2839,6 +2848,11 @@ boundary: {left : object/string right: object/string}
 
             this.month       = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Déc"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
+
+            this.status      = "Statut";
+            this.planned     = "Planifié";
+            this.started     = "Actif";
+            this.finished    = "Terminé";
         },
         initializeRus: function() {
             this.zoomIn      = "Увеличить";
@@ -2860,6 +2874,11 @@ boundary: {left : object/string right: object/string}
 
             this.month       = ["Янв", "Февр", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сент", "Окт", "Нояб", "Дек"];
             this.dateFormat  = "DD/MM/YYYY HH:mm";
+
+            this.status      = "Статус";
+            this.planned     = "Запланированный";
+            this.started     = "Активный";
+            this.finished    = "Законченный";
         },
     });
 
