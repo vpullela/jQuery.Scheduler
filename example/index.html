@@ -63,7 +63,7 @@
             /* Test external events handling */
             $("#chart").bind("scheduleronclickonzoomout", function(event, data) { console.log(data); });
 
-            $("#get_data").bind("click", function(event, data) {console.log(chart.scheduler("getOffsetByDate", "15/06/2013 00:00", "DD/MM/YYYY HH:mm"));});
+            $("#get_data").bind("click", function(event, data) {chart.scheduler("selectDatePeriod", "15/06/2013 00:00", "20/06/2013 00:00", "DD/MM/YYYY HH:mm");});
         });
 
     </script>

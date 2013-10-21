@@ -59,6 +59,10 @@ boundary: {left : object/string right: object/string}
             this.chartView.resizeBlockTesting(position, leftDelta, widthDelta);
         },
 
+        selectDatePeriod: function(startDate, endDate, format) {
+            this.chartView.selectDatePeriod(startDate, endDate, format);
+        },
+
         _setOption: function (name, value) {
             if (name === "width") {
                 this.chartView.setWidth(value);
@@ -287,6 +291,12 @@ boundary: {left : object/string right: object/string}
             // recalculate data table with new boundary
             this.workbenchModel.setData(this.workbenchModel.getData());
             this.render();
+        },
+
+        selectDatePeriod: function(startDate, endDate, format) {
+            startDate = DateUtils.convertToDate(startDate, format);
+            endDate = DateUtils.convertToDate(endDate, format);
+            this.workbenchModel.selectDatePeriod(startDate, endDate);
         }
     });
 
@@ -1659,8 +1669,7 @@ boundary: {left : object/string right: object/string}
             var agregatorIterator = this.getIterator();
             while (agregatorIterator.hasNext()) {
                 var agregator = agregatorIterator.next();
-                
-                this.getAgregator(i).getAgregatorRow().selectPeriod(startDate, endDate);
+                agregator.getAgregatorRow().selectPeriod(startDate, endDate);
             }
         },
         selectArea: function(topPosition, startDate, bottomPosition, endDate) {
