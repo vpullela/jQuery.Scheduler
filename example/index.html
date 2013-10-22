@@ -55,6 +55,9 @@
             chart.scheduler("addBlockCommand", "edit", function(blockModel) {
                 console.log(blockModel);
             });
+            chart.scheduler("addWorkbenchCommand", "edit", function(data) {
+                console.log(data);
+            });
             //TODO: check rerender functionality
             //chart.scheduler("option", {boundary: {left: "2013-01-01", right: "2014-01-20"}});
             //console.log(chart.scheduler("getData"));

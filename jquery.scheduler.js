@@ -43,6 +43,10 @@ boundary: {left : object/string right: object/string}
             this.chartView.addBlockCommand(name, callback);
         },
 
+        addWorkbenchCommand: function(name, callback) {
+            this.chartView.addWorkbenchCommand(name, callback);
+        },
+
         getOffsetByDate: function(date, format) {
             return this.chartView.getOffsetByDate(date, format);
         },
@@ -278,6 +282,10 @@ boundary: {left : object/string right: object/string}
 
         addBlockCommand: function(name, callback) {
             this.workbenchModel.blockMenuModel.addCommand(new CommandModel(name, callback));
+        },
+
+        addWorkbenchCommand: function(name, callback) {
+            this.workbenchModel.workbenchMenuModel.addCommand(new CommandModel(name, callback));
         },
 
         setBoundaries: function(boundary) {
