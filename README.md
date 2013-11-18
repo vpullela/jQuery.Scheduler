@@ -4,6 +4,11 @@ This is a clone of jQuery.ganttView project
 (https://github.com/thegrubbsian/jquery.ganttView)
 with some new features
 
+Documentation
+-------------
+
+[Read the doc](doc/README.md)
+
 License
 -------
 The jQuery.Scheduler plugin may be used free of charge under the conditions 
