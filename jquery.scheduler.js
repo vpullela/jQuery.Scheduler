@@ -102,7 +102,6 @@ boundary: {left : object/string right: object/string}
         // set default geometry (order: params -> css -> hardcode)
         options.cellWidth      = options.cellWidth      || cellWidth     || 21;
         options.cellHeight     = options.cellHeight     || cellHeight    || 32;
-        options.width          = options.width          || width         || 600;
         options.vtHeaderWidth  = options.vtHeaderWidth  || vtHeaderWidth || 100;
         options.showWeekends   = options.showWeekends   && true;         // false
         options.dateFormat     = options.dateFormat                      || "YYYY-MM-DD HH:mm";
@@ -110,6 +109,12 @@ boundary: {left : object/string right: object/string}
         options.mergeNeighbors = options.mergeNeighbors && true;         // false
         options.disabledPast   = options.disabledPast   && true;         // false
         options.language       = options.language                        || "en";
+
+        if (options.widthInDays) {
+            options.width = options.widthInDays * options.cellWidth + options.vtHeaderWidth;
+        } else {
+            options.width = options.width || width || 600;
+        }
 
         // calculabe options
         options.rowWidth = function () { return options.width - options.vtHeaderWidth - 2 };
